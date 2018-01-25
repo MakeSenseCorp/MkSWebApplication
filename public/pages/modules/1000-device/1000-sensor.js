@@ -1,3 +1,4 @@
+var ShowAllSensors = false;
 function ConstructSensors(data) {
 	if (data.payload.sensors.length > 0) {
 		if (document.getElementById('dashboard-sensor-area-' + data.device.uuid).innerHTML == "") {
@@ -7,7 +8,7 @@ function ConstructSensors(data) {
 				var sensor = data.payload.sensors[i];
 				switch(sensor.type) {
 					case 1:
-						if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true) {
+						if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true || ShowAllSensors == true) {
 							html += "<tr>" +
 							"<td>" + (i + 1) + "</td>" +
 							"<td><img width=\"25px\" src=\"../images/basic_sensors/temperature_good.png\"/></td>" +
@@ -18,7 +19,7 @@ function ConstructSensors(data) {
 						}
 					break;
 					case 2:
-						if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true) {
+						if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true || ShowAllSensors == true) {
 							html += "<tr>" +
 							"<td>" + (i + 1) + "</td>" +
 							"<td><img width=\"25px\" src=\"../images/basic_sensors/humidity.png\"/></td>" +
@@ -29,7 +30,7 @@ function ConstructSensors(data) {
 						}
 					break;
 					case 3:
-						if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true) {
+						if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true || ShowAllSensors == true) {
 							html += "<tr>" +
 							"<td>" + (i + 1) + "</td>" +
 							"<td><img width=\"25px\" src=\"../images/basic_sensors/luminance.png\"/></td>" +
@@ -40,7 +41,7 @@ function ConstructSensors(data) {
 						}
 					break;
 					case 4:
-						if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true) {
+						if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true || ShowAllSensors == true) {
 							html += "<tr>" +
 							"<td>" + (i + 1) + "</td>" +
 							"<td><img width=\"30px\" src=\"../images/basic_sensors/switch.png\"/></td>" +
@@ -65,7 +66,7 @@ function ConstructSensors(data) {
 		for (var index in data.payload.sensors) {
 			sensor = data.payload.sensors[index];
 			
-			if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true) {
+			if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true || ShowAllSensors == true) {
 				if (sensor.type == 4) {
 					if (document.getElementById(sensor.uuid + '_toggle') == undefined) {
 						MkSRemoveDeviceListener(data.device.uuid, GetSensorsData_Handler);
@@ -158,14 +159,68 @@ function GetSensorsData_Handler(data) {
 	} else if (data.device.cmd == "get_device_sensors") {
 		ConstructSensors(data);
 	} else if (data.device.cmd == "get_sensor_info") {
+		var isSensorFound = false;
 		for (var index in data.payload.sensors) {
 			sensor = data.payload.sensors[index];
 			if (sensor.uuid == CurrentSensorUuid) {
 				document.getElementById(data.device.uuid + '-sensor-name').value 				= sensor.name;
 				document.getElementById(data.device.uuid + "-sensor-is-favorite").checked 		= ConvertBoleanToJavascript(sensor.is_on_dashboard);
 				document.getElementById(data.device.uuid + "-sensor-update-value-range").value 	= sensor.value_change_range;
+				isSensorFound = true;
 			}
 		}
+		
+		if (isSensorFound) {
+			MkSDeviceSendGetRequest({  	url: GetServerUrl(),
+										key: localStorage.getItem("key"),
+										uuid: data.device.uuid,
+										cmd: "get_sensor_graph",
+										payload: {
+											uuid: CurrentSensorUuid,
+											type: "IndexCount",
+											count: 30
+										}, 
+									}, function (res) {
+									});
+		}
+	} else if (data.device.cmd == "get_sensor_graph") {
+		var data = data.payload.data;
+		var plotData = []
+		for (var index in data) {
+			plotData.push([data[index].ts, data[index].v]);
+		}
+		
+		var options = {
+            series: {
+                lines: {
+                    show: true
+                },
+                points: {
+                    show: true
+                }
+            },
+            grid: {
+                hoverable: true //IMPORTANT! this is needed for tooltip to work
+            },
+            yaxis: {
+                min: -10,
+                max: 100
+            },
+            tooltip: true,
+            tooltipOpts: {
+                content: "'%s'",
+                shifts: {
+                    x: -60,
+                    y: 25
+                }
+            }
+        };
+
+        var plotObj = $.plot($("#sensor-chart"), [{
+                data: plotData,
+                label: "Sensor Data"
+            }],
+            options);
 	}
 }
 
@@ -187,7 +242,9 @@ function UpdateSensorInfo_Device_1000 (uuid) {
 							});
 }
 
-function OnDeviceLoaded_1000(uuid) {
+function OnDeviceLoaded_1000(uuid, isShowAll) {
+	ShowAllSensors = isShowAll;
+	console.log(ShowAllSensors);
 	MkSRemoveDeviceListener(uuid, GetSensorsData_Handler);
 	MkSAddDeviceListener(uuid, GetSensorsData_Handler);
 	MkSDeviceSendGetRequest({  	url: GetServerUrl(),

@@ -17,7 +17,7 @@ function GetDevices() {
 					objStorage.Devices[element.uuid] = element;
 					MkSLoadModuleJavascript(element.type + "-device" + "/" + element.type + "-sensor", function(data) {
 						document.getElementById('sensors_context').innerHTML += "<div id=\"dashboard-sensor-area-" + element.uuid + "\"></div>";
-						window['OnDeviceLoaded_' + element.type](element.uuid);
+						window['OnDeviceLoaded_' + element.type](element.uuid, false);
 					});
 				}
 			});
