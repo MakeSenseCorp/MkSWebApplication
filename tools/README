@@ -1,0 +1,13 @@
+On Ubuntu 14.4 deamons configuration stored at /etc/init as *.conf file.
+
+Start Makesense Webface service
+   sudo makesense start
+Stop Makesense Webface service
+   sudo makesense stop
+
+On Ubuntu 16.4 configuration stored at /etc/systemd/system as *.service file.
+
+Start service
+   sudo systemctl start ip-redirector-client.service
+Stop service
+   sudo systemctl stop ip-redirector-client.service

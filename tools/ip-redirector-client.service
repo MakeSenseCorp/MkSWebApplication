@@ -1,0 +1,16 @@
+
+[Unit]
+Description=Python Client IP Redirector
+
+[Service]
+PIDFile=/tmp/ip-redirect-99.pid
+User=yevgeniy
+Group=yevgeniy
+Restart=always
+KillSignal=SIGQUIT
+WorkingDirectory=/home/yevgeniy/workspace/proj/get_wan_ip
+ExecStart=/home/yevgeniy/workspace/proj/get_wan_ip/exec.sh
+
+[Install]
+WantedBy=multi-user.target
+
