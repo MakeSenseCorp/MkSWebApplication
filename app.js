@@ -31,13 +31,8 @@ var Prime 	= 29; // 32416189669
 var Base 	= 19;  // 32416187567
 var DiffieHellmanDict = {};
 
-
-var IOTClients 			= [];
-var IOTClientsTable 	= {};
 var WebSSEClients 		= [];
 var WebSSEClientsTable  = {}
-var SensorListDictSSE 	= {};
-var DeviceListDictSSE 	= {};
 
 var UserDevKey = "ac6de837-7863-72a9-c789-a0aae7e9d93e";
 
@@ -84,8 +79,113 @@ function LocalStorage (sql) {
 }
 var Local = LocalStorage(sql);
 
-require('./modules/devices.js')(app, security, sql, IOTClients, IOTClientsTable, Local);
-require('./modules/basic_sensors.js')(app, security, sql, IOTClients, IOTClientsTable, Local);
+function ObjectIoTConnection (socket, uuid) {
+	self = this;
+	
+	this.UUID 		= uuid;
+	this.Socket 	= socket;	// Websocket connection to Node.
+	this.Listeners 	= [];		// List of device's UUID.
+
+	return this;
+}
+
+function ObjectIoTClients () {
+	self = this;
+	
+	this.Clients 		= [];
+	this.ClientsTable 	= {};
+
+	return this;
+}
+var iotClients = ObjectIoTClients();
+
+function ObjectIoTBrowsers () {
+	self = this;
+	
+	this.WebSSEClients 		= [];
+	this.WebSSEClientsTable	= {};
+
+	return this;
+}
+var iotBrowsers = ObjectIoTBrowsers();
+
+function Connectivity (iotClients, iotBrowsers, localDB) {
+	self = this;
+	
+	this.IoTClients 	= iotClients;
+	this.IoTBrowsers 	= iotBrowsers;
+	this.LocalDB		= localDB;
+	
+	this.AddIoTClient = function (deviceUUID, client) {
+		console.log("[REST API]# Adding IoT device to cache " + client.UUID);
+		var index = this.IoTClients.Clients.push(client) - 1;
+		this.IoTClients.ClientsTable[deviceUUID] = index;
+
+		return index;
+	}
+
+	this.RemoveIoTClient = function (index) {
+		this.IoTClients.Clients.splice(index, 1);
+	}
+
+	this.GetIoTClient = function (deviceUUID) {
+		return this.IoTClients.Clients[this.IoTClients.ClientsTable[deviceUUID]];
+	}
+
+	this.RegisterListener = function (publisherDeviceUUID, listenerDeviceUUID) {
+		var obj = GetIoTClient(publisherDeviceUUID);
+		if (obj !== undefined) {
+			obj.Listeners.push(listenerDeviceUUID);
+		} else {
+			// TODO: Must add to task DB for publisherDeviceUUID to add later when login.
+		}
+	}
+
+	this.UnregisterListener = function (publisherDeviceUUID, listenerDeviceUUID, callback) {
+		var obj = GetIoTClient(publisherDeviceUUID);
+		for (var index in obj.Listeners) {
+			if (obj.Listeners[index] == listenerDeviceUUID) {
+				obj.Listeners.splice(index, 1);
+				res.json({response:"registered"});
+				return;
+			}
+		}
+
+		callback ({error:"No registered device found", "errno":11});
+	}
+
+	this.PrintIoTClient = function () {
+		console.log("*** Device List ***");
+		for (index = 0; index < this.IoTClients.Clients.length; index++) {
+			console.log ("Device UUID: " + this.IoTClients.Clients[index].UUID + " [" + index + "]");
+		}
+		console.log("*** Device List ***");
+	}
+	
+	this.SendDirectMessage = function (deviceUUID, message, callback) {
+		var connection = this.IoTClients.Clients[this.IoTClients.ClientsTable[deviceUUID]];
+		if (connection == undefined) {
+			callback ({error:"Device not connected", "errno":10});
+		} else {
+			connection.Socket.send(message);
+			for (var index in connection.Listeners) {
+				var obj = this.GetIoTClient(connection.Listeners[index]);
+				if (obj !== undefined) {
+					obj.Socket.send(message);
+					console.log("[REST API]# Send to listener " + obj.UUID);
+				}
+			}
+			callback ({response:"direct"});
+			return;
+		}
+	}
+
+	return this;
+}
+var connectivity = Connectivity(iotClients, iotBrowsers, Local);
+
+require('./modules/devices.js')(app, security, sql, connectivity, Local);
+require('./modules/basic_sensors.js')(app, security, sql, connectivity, Local);
 
 Local.LoadUsers ();
 
@@ -114,14 +214,14 @@ wsServer.on('request', function(request) {
 	
 	if (request.httpRequest.headers.uuid == undefined || request.httpRequest.headers.uuid == "") {
 		console.log("ERROR: Device without UUID trying to connect WebSocket ...");
-		connection.send("Missing uuid");
+		connection.send("Missing UUID");
 		return;
 	}
 	
-	console.log("New device connection request ... " + request.httpRequest.headers.uuid)
-	var index = IOTClients.push(connection) - 1;
-	IOTClientsTable[request.httpRequest.headers.uuid] = index;
-	
+	console.log("[REST API]# Registering device: " + request.httpRequest.headers.uuid)
+	var index = connectivity.AddIoTClient(request.httpRequest.headers.uuid, new ObjectIoTConnection(connection, request.httpRequest.headers.uuid));
+
+	connectivity.PrintIoTClient();	
 	connection.on('message', function(message) {
 		if (message.type === 'utf8') {
 			// console.log ((new Date()) + " #> Message (" + message.utf8Data + ") ...");
@@ -168,7 +268,8 @@ wsServer.on('request', function(request) {
 
 	connection.on('close', function(connection) {
 		console.log ((new Date()) + " #> Session closed ...");
-		IOTClients.splice(index, 1);
+		connectivity.RemoveIoTClient(index);
+		connectivity.PrintIoTClient();
 	});
 });
 

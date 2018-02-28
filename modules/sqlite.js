@@ -78,7 +78,7 @@ function SqliteDB(dbFile) {
 
 SqliteDB.prototype.CheckUserKey = function(key, callback) {
   var sql = this.db;
-  console.log ("DATABASE CheckUserKey");
+  // console.log ("DATABASE CheckUserKey");
   return sql.serialize(function() {
     var query = "SELECT 'OK' as status, `id` " +
         "FROM  `tbl_users` " +
@@ -97,7 +97,7 @@ SqliteDB.prototype.CheckUserKey = function(key, callback) {
 
 SqliteDB.prototype.SelectUsers = function(callback) {
   var sql = this.db;
-  console.log ("DATABASE SelectUsers");
+  // console.log ("DATABASE SelectUsers");
   sql.serialize(function() {
     var query = "SELECT `id`, `key`, `user_name`, `password`, `ts`, `last_login_ts`, `enabled` FROM  `tbl_users`;";
     sql.all(query, function(err, rows) {
@@ -108,7 +108,7 @@ SqliteDB.prototype.SelectUsers = function(callback) {
 
 SqliteDB.prototype.SelectUserByNamePassword = function(user, callback) {
   var sql = this.db;
-  console.log ("DATABASE SelectUserByNamePassword");
+  // console.log ("DATABASE SelectUserByNamePassword");
   sql.serialize(function() {
     var query = "SELECT `id`, `key`, `user_name`, `password`, `ts`, `last_login_ts`, `enabled` FROM  `tbl_users` WHERE `user_name`='" + user.userName + "' AND `password`='" + user.password + "';";
     sql.all(query, function(err, rows) {
@@ -130,10 +130,9 @@ SqliteDB.prototype.SelectUserByNamePassword = function(user, callback) {
 
 SqliteDB.prototype.SelectUserByKey = function(key, callback) {
   var sql = this.db;
-  console.log ("DATABASE SelectUserByKey");
+  // console.log ("DATABASE SelectUserByKey");
   sql.serialize(function() {
     var query = "SELECT `id`, `key`, `user_name`, `password`, `ts`, `last_login_ts`, `enabled` FROM  `tbl_users` WHERE `key`='" + key + "';";
-    // console.log(query);
     sql.all(query, function(err, rows) {
       if (rows == null) {
       } else {
@@ -158,7 +157,7 @@ SqliteDB.prototype.SelectUserByKey = function(key, callback) {
 
 SqliteDB.prototype.SelectUserById = function(user, callback) {
   var sql = this.db;
-  console.log ("DATABASE SelectUserById");
+  // console.log ("DATABASE SelectUserById");
   sql.serialize(function() {
     var query = "SELECT `id`, `key`, `user_name`, `password`, `ts`, `last_login_ts`, `enabled` FROM  `tbl_users` WHERE `id`=" + user.id + ";";
     sql.all(query, function(err, rows) {
@@ -180,7 +179,7 @@ SqliteDB.prototype.SelectUserById = function(user, callback) {
 
 SqliteDB.prototype.InsertUser = function(user, callback) {
   var sql = this.db;
-  console.log ("DATABASE InsertUser");
+  // console.log ("DATABASE InsertUser");
   user.key = GenerateUUID();
   sql.serialize(function() {
     var query = "INSERT INTO `tbl_users` (`id`, `key`, `user_name`, `password`, `ts`, `last_login_ts`, `enabled`) " +
@@ -192,7 +191,7 @@ SqliteDB.prototype.InsertUser = function(user, callback) {
 
 SqliteDB.prototype.DeleteUserById = function(id, callback) {
   var sql = this.db;
-  console.log ("DATABASE DeleteUserById");
+  // console.log ("DATABASE DeleteUserById");
   sql.serialize(function() {
     var query = "DELETE FROM `tbl_users` WHERE `id`=" + id + ";";
     ret = sql.run(query);
@@ -202,7 +201,7 @@ SqliteDB.prototype.DeleteUserById = function(id, callback) {
 
 SqliteDB.prototype.DeleteUsers = function(callback) {
   var sql = this.db;
-  console.log ("DATABASE DeleteUsers");
+  // console.log ("DATABASE DeleteUsers");
   sql.serialize(function() {
     var query = "DELETE FROM `tbl_users`;";
     sql.run(query);
@@ -228,7 +227,7 @@ SqliteDB.prototype.DeleteUsers = function(callback) {
 
 SqliteDB.prototype.SelectDevices = function(callback) {
   var sql = this.db;
-  console.log ("DATABASE SelectDevices");
+  // console.log ("DATABASE SelectDevices");
   sql.serialize(function() {
     var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices`;";
     sql.all(query, function(err, rows) {
@@ -239,10 +238,9 @@ SqliteDB.prototype.SelectDevices = function(callback) {
 
 SqliteDB.prototype.SelectDeviceByUserKey = function(device, callback) {
   var sql = this.db;
-  console.log ("DATABASE SelectDeviceByUserKey");
+  // console.log ("DATABASE SelectDeviceByUserKey");
   sql.serialize(function() {
     var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `user_id`='" + device.userId + "';";
-    // console.log(query);
     sql.all(query, function(err, rows) {
       if (rows == null) {
       } else {
@@ -270,10 +268,9 @@ SqliteDB.prototype.SelectDeviceByUserKey = function(device, callback) {
 
 SqliteDB.prototype.SelectDeviceByDeviceUUID = function(device, callback) {
   var sql = this.db;
-  console.log ("DATABASE SelectDeviceByDeviceUUID");
+  // console.log ("DATABASE SelectDeviceByDeviceUUID");
   sql.serialize(function() {
     var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `uuid`='" + device.uuid + "';";
-    // console.log(query);
     sql.all(query, function(err, rows) {
       if (rows == null) {
       } else {
@@ -331,10 +328,9 @@ SqliteDB.prototype.SelectDevice = function(device, callback) {
 
 SqliteDB.prototype.CheckDeviceByUUID = function(device, callback) {
   var sql = this.db;
-  console.log ("DATABASE CheckDeviceByUUID");
+  // console.log ("DATABASE CheckDeviceByUUID");
   sql.serialize(function() {
     var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `uuid`='" + device.uuid + "';";
-    // console.log(query);
     sql.all(query, function(err, rows) {
       if (rows == null) {
       } else {
@@ -351,7 +347,7 @@ SqliteDB.prototype.CheckDeviceByUUID = function(device, callback) {
 
 SqliteDB.prototype.InsertDevice = function(device, callback) {
   var sql = this.db;
-  console.log ("DATABASE InsertDevice ");
+  // console.log ("DATABASE InsertDevice ");
   sql.serialize(function() {
     var query = "INSERT INTO `tbl_devices` (`id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled`) " +
         "VALUES (NULL," + device.userId + "," + device.type + ",'" + device.uuid + "','" + device.osType + "','" + device.osVersion + "','" + device.brandName + "','New Device','Description'," + device.lastUpdateTs + ",1);";
@@ -362,10 +358,9 @@ SqliteDB.prototype.InsertDevice = function(device, callback) {
 
 SqliteDB.prototype.UpdateDeviceInfo = function(device, callback) {
   var sql = this.db;
-  console.log ("DATABASE UpdateDevice");
+  // console.log ("DATABASE UpdateDevice");
   sql.serialize(function() {
     var query = "UPDATE `tbl_devices` SET `name`='" + device.name + "', `description`='" + device.description + "', `enabled`=" + device.enabled + " WHERE `uuid`='" + device.uuid + "';";
-    console.log(query);
     sql.run(query);
     callback({error:"OK"});
   });
@@ -373,7 +368,7 @@ SqliteDB.prototype.UpdateDeviceInfo = function(device, callback) {
 
 SqliteDB.prototype.UpdateDeviceTimeStamp = function(device, callback) {
   var sql = this.db;
-  console.log ("DATABASE UpdateDevice");
+  // console.log ("DATABASE UpdateDevice");
   sql.serialize(function() {
     var query = "UPDATE `tbl_devices` SET `last_update_ts`=" + device.lastUpdateTs + " WHERE `uuid`='" + device.uuid + "';";
     sql.run(query);
@@ -383,7 +378,7 @@ SqliteDB.prototype.UpdateDeviceTimeStamp = function(device, callback) {
 
 SqliteDB.prototype.DeleteDevices = function(callback) {
   var sql = this.db;
-  console.log ("DATABASE DeleteDevices");
+  // console.log ("DATABASE DeleteDevices");
   sql.serialize(function() {
     var query = "DELETE FROM `tbl_devices`;";
     sql.run(query);
@@ -405,10 +400,9 @@ SqliteDB.prototype.DeleteDevices = function(callback) {
 
 SqliteDB.prototype.SelectCameraSensor = function(sensor, callback) {
   var sql = this.db;
-  console.log ("DATABASE SelectCameraSensor");
+  // console.log ("DATABASE SelectCameraSensor");
   sql.serialize(function() {
     var query = "SELECT `id`,`type`,`device_id`,`image_path`,`image_record_path`,`last_update_ts`,`enabled` FROM `tbl_camera_sensors` WHERE `device_id`=" + sensor.deviceId + " AND `type`=" + sensor.type + ";";
-    console.log (query);
     sql.all(query, function(err, rows) {
       if (rows == null) {
       } else {
@@ -432,7 +426,7 @@ SqliteDB.prototype.SelectCameraSensor = function(sensor, callback) {
 
 SqliteDB.prototype.SelectCameraSensors = function(deviceId, callback) {
   var sql = this.db;
-  console.log ("DATABASE SelectCameraSensors");
+  // console.log ("DATABASE SelectCameraSensors");
   sql.serialize(function() {
     var query = "SELECT `id`,`type`,`device_id`,`image_path`,`image_record_path`,`last_update_ts`,`enabled` FROM `tbl_camera_sensors` WHERE `device_id`=" + deviceId + ";";
     sql.all(query, function(err, rows) {
@@ -466,7 +460,7 @@ SqliteDB.prototype.SelectCameraSensors = function(deviceId, callback) {
 
 SqliteDB.prototype.SelectCameraSensorByType = function(deviceId, type, callback) {
   var sql = this.db;
-  console.log ("DATABASE SelectCameraSensorByType");
+  // console.log ("DATABASE SelectCameraSensorByType");
   sql.serialize(function() {
     var query = "SELECT `id`,`type`,`device_id`,`image_path`,`image_record_path`,`last_update_ts`,`enabled` FROM `tbl_camera_sensors` WHERE `device_id`=" + deviceId + " AND `type`=" + type + ";";
     sql.all(query, function(err, rows) {
@@ -500,11 +494,10 @@ SqliteDB.prototype.SelectCameraSensorByType = function(deviceId, type, callback)
 
 SqliteDB.prototype.InsertCameraSensor = function(sensor, callback) {
   var sql = this.db;
-  console.log ("DATABASE InsertCameraSensor");
+  // console.log ("DATABASE InsertCameraSensor");
   sql.serialize(function() {
     var query = "INSERT INTO `tbl_camera_sensors` (`id`,`type`,`device_id`,`image_path`,`image_record_path`,`last_update_ts`,`enabled`) " +
         "VALUES (NULL," + sensor.type + "," + sensor.deviceId + ",'" + sensor.imagePath + "','" + sensor.imageRecordPath + "'," + sensor.lastUpdateTs + ",1);";
-    console.log (query);
     sql.run(query);
     callback({error:"OK"});
   });
@@ -525,12 +518,11 @@ sql.run("CREATE TABLE IF NOT EXISTS `tbl_basic_sensors` (" +
 
 SqliteDB.prototype.InsertBasicSensor = function(sensor, callback) {
 	var sql = this.db;
-	console.log ("DATABASE InsertBasicSensor");
+	// console.log ("DATABASE InsertBasicSensor");
 
 	sql.serialize(function() {
 		var query = "INSERT INTO `tbl_basic_sensors` (`id`,`uuid`,`name`,`type`,`user_id`,`device_id`,`value`,`last_update_ts`,`enabled`) " +
 			"VALUES (NULL,'" + sensor.uuid + "','" + sensor.name + "'," + sensor.type + "," + sensor.userId + "," + sensor.deviceId + "," + sensor.value + "," + sensor.lastUpdateTs + ",1);";
-		console.log (query);
 
 		try {
 			sql.run(query);
@@ -544,11 +536,10 @@ SqliteDB.prototype.InsertBasicSensor = function(sensor, callback) {
 
 SqliteDB.prototype.UpdateBasicSensor = function(sensor, callback) {
 	var sql = this.db;
-	console.log ("DATABASE UpdateBasicSensor");
+	// console.log ("DATABASE UpdateBasicSensor");
 
 	sql.serialize(function() {
     var query = "UPDATE `tbl_basic_sensors` SET `last_update_ts`=" + sensor.lastUpdateTs + ", `name`='" + sensor.name + "', `value`=" + sensor.value + ", `enabled`=" + sensor.enabled + " WHERE `uuid`='" + sensor.uuid + "';";
-    console.log(query);
     sql.run(query);
     callback({error:"OK"});
   });
@@ -578,7 +569,6 @@ SqliteDB.prototype.SelectBasicSensorByUserId = function(userId, callback) {
 
 	sql.serialize(function() {
 		var query = "SELECT `tbl_basic_sensors`.*, `tbl_devices`.uuid as device_uuid FROM `tbl_basic_sensors` INNER JOIN `tbl_devices` ON `tbl_basic_sensors`.device_id = `tbl_devices`.id WHERE `tbl_basic_sensors`.user_id=" + userId + ";";
-		// console.log (query);
 		sql.all(query, function(err, rows) {
 			if (rows == null) {
 			} else {

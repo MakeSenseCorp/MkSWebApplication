@@ -1,6 +1,6 @@
 const moment = require('moment');
 
-module.exports = function(app, security, sql, iotClients, iotTable, storage) {
+module.exports = function(app, security, sql, connectivity, storage) {
 	
 	app.get('/select/devices/:key', function(req, res) {
 		security.CheckUUID(req.params.key, function (valid) {
@@ -35,8 +35,8 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	app.get('/get/device/node/status/:key/:uuid', function(req, res) {		
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
-				var connection = iotClients[iotTable[req.params.uuid]];
-				if (connection == undefined) {
+				var iotClient = connectivity.GetIoTClient(req.params.uuid);
+				if (iotClient == undefined) {
 					res.json({error:"Device not connected", "errno":10});
 				} else {
 					res.json({response:"status"});
@@ -50,19 +50,15 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 	app.get('/cmd/device/node/direct/:key/:uuid/:request', function(req, res) {		
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
-				var connection = iotClients[iotTable[req.params.uuid]];
-				if (connection == undefined) {
-					res.json({error:"Device not connected", "errno":10});
-				} else {
-					connection.send(req.params.request);
-					res.json({response:"direct"});
-				}
+				connectivity.SendDirectMessage(req.params.uuid, req.params.request, function(msg) {
+					res.json(msg);
+				});
 			} else {
 				res.json({error:"security issue"});
 			}
 		});
 	});
-	
+
 	app.get('/select/device/:key/:uuid', function(req, res) {		
 		var reqDevice = {
 			uuid: req.params.uuid
@@ -91,6 +87,36 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 		});
 	});
 	
+	app.post('/register/device/node/listener', function(req, res) {
+		var data = JSON.stringify(req.body)
+		data = data.substring(2, data.length - 5)
+		data = data.split('\\').join('');
+		var jData = JSON.parse(data);
+
+		console.log("[REST API]# Registering device " + jData.payload.listener_uuid + " for " + jData.payload.publisher_uuid);
+		security.CheckUUID(jData.key, function (valid) {
+			if (valid) {
+				connectivity.RegisterListener(jData.payload.publisher_uuid, jData.payload.listener_uuid, function(msg) {
+					res.json(msg);
+				});
+			} else {
+				res.json({error:"security issue"});
+			}
+		});
+	});
+
+	app.post('/unregister/device/node/listener/:key/:publisher_uuid/:listener_uuid', function(req, res) {
+		console.log("[REST API]# Unregistering device " + req.params.listener_uuid + " from " + req.params.publisher_uuid);	
+		security.CheckUUID(req.params.key, function (valid) {
+			if (valid) {
+				connectivity.UnregisterListener(req.params.publisher_uuid, req.params.listener_uuid);
+				res.json({response:"unregistered"});
+			} else {
+				res.json({error:"security issue"});
+			}
+		});
+	});
+
 	app.post ('/device/register', function (req, res) {
 		var data = JSON.stringify(req.body)
 		data = data.substring(2, data.length - 5)
@@ -103,7 +129,7 @@ module.exports = function(app, security, sql, iotClients, iotTable, storage) {
 					if (data == true) {
 						res.json({info:"Device registered"});
 					} else {
-						sql.SelectUserByKey(req.params.key, function (err, user) {
+						sql.SelectUserByKey(jData.key, function (err, user) {
 							if (err.info != undefined) {
 								var device = {
 								id: 0,

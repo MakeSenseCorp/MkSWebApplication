@@ -6,6 +6,10 @@ function ConstructSensors(data) {
 			"<table class=\"table table-hover\"><tbody>";
 			for (i = 0; i < data.payload.sensors.length; i++) {
 				var sensor = data.payload.sensors[i];
+				var favorite = "Yes";
+				if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == false) {
+					favorite = "No";
+				}
 				switch(sensor.type) {
 					case 1:
 						if (ConvertBoleanToJavascript(sensor.is_on_dashboard) == true || ShowAllSensors == true) {
@@ -14,7 +18,7 @@ function ConstructSensors(data) {
 							"<td><img width=\"25px\" src=\"../images/basic_sensors/temperature_good.png\"/></td>" +
 							"<td><label id=\"" + sensor.uuid + "-name\" onclick=\"OpenSensorInfoModalWindow_Device_1000('" + data.device.uuid + "','" + sensor.uuid + "');\">" + sensor.name + "</label></td>" +
 							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> C</span></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">Yes</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">" + favorite + "</span></td>" +
 							"</tr>";
 						}
 					break;
@@ -25,7 +29,7 @@ function ConstructSensors(data) {
 							"<td><img width=\"25px\" src=\"../images/basic_sensors/humidity.png\"/></td>" +
 							"<td><label id=\"" + sensor.uuid + "-name\" onclick=\"OpenSensorInfoModalWindow_Device_1000('" + data.device.uuid + "','" + sensor.uuid + "');\">" + sensor.name + "</label></td>" +
 							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> %</span></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">Yes</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">" + favorite + "</span></td>" +
 							"</tr>";
 						}
 					break;
@@ -36,7 +40,7 @@ function ConstructSensors(data) {
 							"<td><img width=\"25px\" src=\"../images/basic_sensors/luminance.png\"/></td>" +
 							"<td><label id=\"" + sensor.uuid + "-name\" onclick=\"OpenSensorInfoModalWindow_Device_1000('" + data.device.uuid + "','" + sensor.uuid + "');\">" + sensor.name + "</label></td>" +
 							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em> %</span></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">Yes</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">" + favorite + "</span></td>" +
 							"</tr>";
 						}
 					break;
@@ -47,7 +51,7 @@ function ConstructSensors(data) {
 							"<td><img width=\"30px\" src=\"../images/basic_sensors/switch.png\"/></td>" +
 							"<td><label id=\"" + sensor.uuid + "-name\" onclick=\"OpenSensorInfoModalWindow_Device_1000('" + data.device.uuid + "','" + sensor.uuid + "');\">" + sensor.name + "</label></td>" +
 							"<td align=\"center\"><div onclick=\"onClickSwitch('" + sensor.uuid + "','" + data.device.uuid + "');\"><input id=\"" + sensor.uuid + "_toggle\" type=\"checkbox\" data-toggle=\"toggle\" data-onstyle=\"success\" value=\"" + sensor.value + "\" data-offstyle=\"danger\"></div></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">Yes</span></td>" +
+							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">" + favorite + "</span></td>" +
 							"</tr>";
 						}
 					default:
@@ -185,9 +189,12 @@ function GetSensorsData_Handler(data) {
 		}
 	} else if (data.device.cmd == "get_sensor_graph") {
 		var data = data.payload.data;
-		var plotData = []
+		var plotData = [];
+		var timeslice = data[0].ts - data[data.length-1].ts;
+		console.log(timeslice);
+		
 		for (var index in data) {
-			plotData.push([data[index].ts, data[index].v]);
+			plotData.push([index, data[index].v]);
 		}
 		
 		var options = {
@@ -221,6 +228,8 @@ function GetSensorsData_Handler(data) {
                 label: "Sensor Data"
             }],
             options);
+		
+		document.getElementById("sensor-graph-timeslice").innerHTML = "Time slice for this graph is " + Math.floor(timeslice / 60) + " minutes";
 	}
 }
 
