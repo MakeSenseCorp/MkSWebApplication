@@ -139,12 +139,15 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 		return this.IoTClients.Clients[this.IoTClients.ClientsTable[deviceUUID]];
 	}
 
-	this.RegisterListener = function (publisherDeviceUUID, listenerDeviceUUID) {
+	this.RegisterListener = function (publisherDeviceUUID, listenerDeviceUUID, callback) {
 		var obj = GetIoTClient(publisherDeviceUUID);
 		if (obj !== undefined) {
 			obj.Listeners.push(listenerDeviceUUID);
+			callback ({info:"registered"});
 		} else {
 			// TODO: Must add to task DB for publisherDeviceUUID to add later when login.
+			console.log("ERROR: Could not register device to a UNDEFINED publisher");
+			callback ({error:"No registered device found", "errno":11});
 		}
 	}
 
@@ -153,8 +156,7 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 		for (var index in obj.Listeners) {
 			if (obj.Listeners[index] == listenerDeviceUUID) {
 				obj.Listeners.splice(index, 1);
-				res.json({response:"registered"});
-				return;
+				callback ({info:"unregistered"});
 			}
 		}
 

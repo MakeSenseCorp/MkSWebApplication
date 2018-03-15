@@ -116,10 +116,11 @@ module.exports = function(app, security, sql, connectivity, storage) {
 		data = data.split('\\').join('');
 		var jData = JSON.parse(data);
 
-		console.log("[REST API]# Registering device " + jData.payload.listener_uuid + " for " + jData.payload.publisher_uuid);
 		security.CheckUUID(jData.key, function (valid) {
 			if (valid) {
+				console.log("[REST API]# Registering device " + jData.payload.listener_uuid + " for " + jData.payload.publisher_uuid);
 				connectivity.RegisterListener(jData.payload.publisher_uuid, jData.payload.listener_uuid, function(msg) {
+					console.log("[REST API]# REGISTERED device " + jData.payload.listener_uuid + " for " + jData.payload.publisher_uuid);
 					res.json(msg);
 				});
 			} else {
@@ -133,7 +134,7 @@ module.exports = function(app, security, sql, connectivity, storage) {
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
 				connectivity.UnregisterListener(req.params.publisher_uuid, req.params.listener_uuid);
-				res.json({response:"unregistered"});
+				res.json({info:"UnRegistered"});
 			} else {
 				res.json({error:"security issue"});
 			}
