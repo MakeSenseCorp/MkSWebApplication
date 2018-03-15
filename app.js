@@ -64,7 +64,10 @@ function LocalStorage (sql) {
 					lastLoginTs: users[i].last_login_ts,
 					enabled: users[i].enabled
 				};
-				self.UserDictionary[users[i].key] = user;
+				var obj = Object();
+				obj.UserInfo = user;
+				obj.UserDeviceList = []
+				self.UserDictionary[users[i].key] = obj;
 			}
 			
 			self.UserLoaded = true;
@@ -118,10 +121,14 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 	
 	this.AddIoTClient = function (deviceUUID, client) {
 		console.log("[REST API]# Adding IoT device to cache " + client.UUID);
-		var index = this.IoTClients.Clients.push(client) - 1;
-		this.IoTClients.ClientsTable[deviceUUID] = index;
-
-		return index;
+		var item = GetIoTClient(client.UUID);
+		if (item === undefined) {
+			var index = this.IoTClients.Clients.push(client) - 1;
+			this.IoTClients.ClientsTable[deviceUUID] = index;
+			return index;
+		}
+		
+		return -1;
 	}
 
 	this.RemoveIoTClient = function (index) {
@@ -205,6 +212,17 @@ function DisconnectedDeviceHandlerFunc() {
 	}
 }
 
+function FindUserDevice (key, uuid) {
+	for (var index in Local.UserDictionary[key].UserDeviceList) {
+		var item = Local.UserDictionary[key].UserDeviceList[index];
+		if (item.uuid == uuid) {
+			return index;
+		}
+	}
+
+	return -1;
+}
+
 // var StatusHandler = setInterval (StatusHandlerFunc, 10000);
 var DisconnectedDeviceHandler = setInterval (DisconnectedDeviceHandlerFunc, 5000);
 
@@ -218,8 +236,27 @@ wsServer.on('request', function(request) {
 		return;
 	}
 	
+	// TODO - Check if device registered in database.
+	// TODO - Check for user key.
+
 	console.log("[REST API]# Registering device: " + request.httpRequest.headers.uuid)
-	var index = connectivity.AddIoTClient(request.httpRequest.headers.uuid, new ObjectIoTConnection(connection, request.httpRequest.headers.uuid));
+	connectivity.AddIoTClient(request.httpRequest.headers.uuid, new ObjectIoTConnection(connection, request.httpRequest.headers.uuid));
+	console.log("Payload " + request.httpRequest.headers.payload);
+	var jData = JSON.parse(request.httpRequest.headers.payload);
+
+	if (Local.UserDictionary[request.httpRequest.headers.key] === undefined) {
+		console.log("ERROR: Unrecognized user ... " + request.httpRequest.headers.key);
+		return;
+	}
+
+	var deviceInfo = {
+		uuid: request.httpRequest.headers.uuid,
+		sensors: jData
+	}
+	if (FindUserDevice(request.httpRequest.headers.key, request.httpRequest.headers.uuid) == -1) {
+		Local.UserDictionary[request.httpRequest.headers.key].UserDeviceList.push(deviceInfo);
+		console.log("Connection data saved to user DB");
+	}
 
 	connectivity.PrintIoTClient();	
 	connection.on('message', function(message) {
@@ -249,6 +286,8 @@ wsServer.on('request', function(request) {
 			} else {
 				Local.DeviceListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.device;
 				Local.SensorListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.sensors;
+				Local.UserDictionary[MassageKey].Sensors = jsonData.data.sensors;
+				console.log("Key: " + MassageKey + ", " + jsonData.data.sensors);
 				// TODO - Save to SQLite database.
 			}
 

@@ -32,6 +32,27 @@ module.exports = function(app, security, sql, connectivity, storage) {
 		});
 	});
 	
+	/*
+	 * Return all devices with attached sensors for spwcific user key.
+	 */
+	app.get('/get/device/sensor/all/:key', function(req, res) {
+		console.log("/get/device/all");		
+		security.CheckUUID(req.params.key, function (valid) {
+			if (valid) {
+				user = storage.UserDictionary[req.params.key];
+				if (user === undefined) {
+					console.log("ERROR: User undefined.");
+					res.json({error:"User undefined"});
+				} else {
+					console.log(user.UserDeviceList);
+					res.json(user.UserDeviceList);
+				}
+			} else {
+				res.json({error:"security issue"});
+			}
+		});
+	});
+
 	app.get('/get/device/node/status/:key/:uuid', function(req, res) {		
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
@@ -48,6 +69,7 @@ module.exports = function(app, security, sql, connectivity, storage) {
 	});
 	
 	app.get('/cmd/device/node/direct/:key/:uuid/:request', function(req, res) {		
+		console.log("/cmd/device/node/direct " + req.params.uuid);
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
 				connectivity.SendDirectMessage(req.params.uuid, req.params.request, function(msg) {
@@ -87,6 +109,7 @@ module.exports = function(app, security, sql, connectivity, storage) {
 		});
 	});
 	
+	// TODO - Check for user key - Security issue.
 	app.post('/register/device/node/listener', function(req, res) {
 		var data = JSON.stringify(req.body)
 		data = data.substring(2, data.length - 5)

@@ -28,6 +28,10 @@ function MkSLoadModuleJavascript (name, callback) {
     });
 }
 
+function MkSOpenDeviceModal (uuid) {
+	$('#' + uuid + '-modal').modal('show');
+}
+
 function MkSRegisterToSensorListener(obj) {
 	if (!!window.EventSource) {
 		console.log ((new Date()) + " #> Registered to sensor stream [" + obj.key + "]");
@@ -97,6 +101,15 @@ function MkSDeviceStatus(obj, callback) {
 	});
 }
 
+function MkSDeviceGetAllOnUserKey(obj, callback) {
+	$.ajax({
+	    url: obj.url + 'get/device/sensor/all/' + obj.key,
+	    type: "GET",
+	    dataType: "json",
+	    success: callback
+	});
+}
+
 function MkSDeviceSendGetRequest(obj, callback) {
 	request = {
 		request: "direct",
@@ -108,6 +121,7 @@ function MkSDeviceSendGetRequest(obj, callback) {
 			payload: obj.payload
 		}
 	};
+	console.log(request);
 	$.ajax({
 	    url: obj.url + 'cmd/device/node/direct/' + obj.key + "/" + obj.uuid + "/" + JSON.stringify(request),
 	    type: "GET",
