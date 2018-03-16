@@ -90,7 +90,7 @@ function GetSensorsData_Handler(data) {
 							"<td>" + (i + 1) + "</td>" +
 							"<td><img width=\"30px\" src=\"../images/basic_sensors/switch.png\"/></td>" +
 							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
-							"<td align=\"center\"><div onclick=\"onClickSwitch('" + sensor.uuid + "','" + data.device.uuid + "');\"><input id=\"" + sensor.uuid + "_toggle\" type=\"checkbox\" data-toggle=\"toggle\" data-onstyle=\"success\" value=\"" + sensor.value + "\" data-offstyle=\"danger\"></div></td>" +
+							"<td align=\"center\"><div onclick=\"onClickSwitch('" + sensor.uuid + "','" + data.device.uuid + "'," + sensor.type + ");\"><input id=\"" + sensor.uuid + "_toggle\" type=\"checkbox\" data-toggle=\"toggle\" data-onstyle=\"success\" value=\"" + sensor.value + "\" data-offstyle=\"danger\"></div></td>" +
 							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">" + isFavorite + "</span></td>" +
 							"</tr>";
 						default:
@@ -197,7 +197,7 @@ function UpdateDeviceInfo_Device_1000(uuid) {
 							 });
 }
 
-function onClickSwitch (sesnorUuid, deviceUuid, value) {
+function onClickSwitch (sesnorUuid, deviceUuid, type) {
 	var currentValue = document.getElementById(sesnorUuid + '_toggle').value;
 	if (currentValue == 1) {
 		document.getElementById(sesnorUuid + '_toggle').value = 0;
@@ -213,7 +213,8 @@ function onClickSwitch (sesnorUuid, deviceUuid, value) {
 									sensors:[
 										{
 											uuid: sesnorUuid,
-											value: document.getElementById(sesnorUuid + '_toggle').value
+											value: document.getElementById(sesnorUuid + '_toggle').value,
+											type: type
 										}
 									]
 								}, 

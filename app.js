@@ -112,6 +112,32 @@ function ObjectIoTBrowsers () {
 }
 var iotBrowsers = ObjectIoTBrowsers();
 
+var PacketsToSendList = [];
+function SendPacketsFunc () {
+	if (PacketsToSendList.length > 0) {
+		var messageTask = PacketsToSendList.pop();
+		var comm = connectivity.GetIoTClient(messageTask.uuid);
+		// comm.Socket.send(messageTask.data);
+
+		url = "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/cmd/device/node/direct/" + messageTask.key + "/" + messageTask.uuid + "/" + messageTask.data;
+		http.get( url, function(response) {
+  			response.setEncoding("utf8");
+  			var body = "";
+  			response.on("data", function(data) {
+    			body += data;
+  			});
+  			response.on("end", function() {
+    			body = JSON.parse(body);
+    			console.log(body);
+  			});
+		});
+
+		console.log("Messages send to " + messageTask.uuid);
+		console.log("Messages left to send " + PacketsToSendList.length);
+	}
+}
+var SendPacketsHandler = setInterval (SendPacketsFunc, 5000);
+
 function Connectivity (iotClients, iotBrowsers, localDB) {
 	self = this;
 	
@@ -132,6 +158,9 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 	}
 
 	this.RemoveIoTClient = function (index) {
+		var client = this.IoTClients.Clients[index];
+		client.Listeners = [];
+
 		this.IoTClients.Clients.splice(index, 1);
 	}
 
@@ -142,6 +171,7 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 	this.RegisterListener = function (publisherDeviceUUID, listenerDeviceUUID, callback) {
 		var obj = GetIoTClient(publisherDeviceUUID);
 		if (obj !== undefined) {
+			// TODO - Check if device already registered.
 			obj.Listeners.push(listenerDeviceUUID);
 			callback ({info:"registered"});
 		} else {
@@ -177,14 +207,48 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 			callback ({error:"Device not connected", "errno":10});
 		} else {
 			connection.Socket.send(message);
-			for (var index in connection.Listeners) {
+			/*for (var index in connection.Listeners) {
 				var obj = this.GetIoTClient(connection.Listeners[index]);
 				if (obj !== undefined) {
 					obj.Socket.send(message);
 					console.log("[REST API]# Send to listener " + obj.UUID);
 				}
-			}
+			}*/
 			callback ({response:"direct"});
+			return;
+		}
+	}
+
+	this.SendDirectMessageToListeners = function (deviceUUID, message, key) {
+		var connection = this.IoTClients.Clients[this.IoTClients.ClientsTable[deviceUUID]];
+		if (connection == undefined) {
+			return "ERROR: No client.";
+		} else {
+			for (var index in connection.Listeners) {
+				var obj = this.IoTClients.Clients[this.IoTClients.ClientsTable[connection.Listeners[index]]];
+				if (obj!== undefined) {
+					if (message !== undefined) {
+						/*PacketsToSendList.push({
+							uuid: obj.UUID,
+							data: message,
+							key: key
+						});*/
+						var msg = {
+							request: "direct",
+							data: {
+								device: {
+									cmd: "publish"
+								},
+								payload: message
+							}
+						};
+						obj.Socket.send(JSON.stringify(msg));
+					} else {
+						console.log("[REST API]# Send to listener " + obj.UUID + " ... Message UNDEFINED");
+					}
+				}
+			}
+			return "Info: Success";
 			return;
 		}
 	}
@@ -228,6 +292,7 @@ function FindUserDevice (key, uuid) {
 // var StatusHandler = setInterval (StatusHandlerFunc, 10000);
 var DisconnectedDeviceHandler = setInterval (DisconnectedDeviceHandlerFunc, 5000);
 
+var ws_clients = [];
 // WebSocket server
 wsServer.on('request', function(request) {
 	var connection = request.accept(null, request.origin);
@@ -242,7 +307,8 @@ wsServer.on('request', function(request) {
 	// TODO - Check for user key.
 
 	console.log("[REST API]# Registering device: " + request.httpRequest.headers.uuid)
-	connectivity.AddIoTClient(request.httpRequest.headers.uuid, new ObjectIoTConnection(connection, request.httpRequest.headers.uuid));
+	var index = connectivity.AddIoTClient(request.httpRequest.headers.uuid, new ObjectIoTConnection(connection, request.httpRequest.headers.uuid));
+	var sec_index = ws_clients.push(connection) - 1;
 	console.log("Payload " + request.httpRequest.headers.payload);
 	var jData = JSON.parse(request.httpRequest.headers.payload);
 
@@ -265,6 +331,23 @@ wsServer.on('request', function(request) {
 		if (message.type === 'utf8') {
 			// console.log ((new Date()) + " #> Message (" + message.utf8Data + ") ...");
 			connection.LastMessageData = message.utf8Data;
+
+			/*
+			{ 	response: 'direct',
+				data: 
+				{ 	key: 'ac6de837-7863-72a9-c789-a0aae7e9d93e',
+					device: 
+					{ 	uuid: 'ac6de837-7863-72a9-c789-b0aae7e9d93e',
+						type: 1000,
+						cmd: 'get_device_sensors',
+						timestamp: 1521186763
+					},
+					payload: {	sensors: [Object]
+					}
+				} 
+			}
+			*/
+
 			jsonData = JSON.parse(message.utf8Data);
 			
 			if (jsonData.data === undefined) {
@@ -287,12 +370,18 @@ wsServer.on('request', function(request) {
 			if (jsonData.response == "direct") {
 			} else {
 				Local.DeviceListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.device;
-				Local.SensorListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.sensors;
+				Local.SensorListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.payload.sensors;
 				Local.UserDictionary[MassageKey].Sensors = jsonData.data.sensors;
 				console.log("Key: " + MassageKey + ", " + jsonData.data.sensors);
 				// TODO - Save to SQLite database.
 			}
 
+			connectivity.SendDirectMessageToListeners(jsonData.data.device.uuid, jsonData.data.payload, jsonData.data.key);
+			/*var json = JSON.stringify({ type:'message', data: 'data' });
+			for (var i=0; i < ws_clients.length; i++) {
+	          	ws_clients[i].sendUTF(jsonData.data);
+	        }*/
+			
 			// Sending data to application. No check needed application will use data it needs. (user key was verified)
 			WebConnections = WebSSEClientsTable[jsonData.data.key];
 			if (WebConnections != undefined) {
@@ -311,6 +400,7 @@ wsServer.on('request', function(request) {
 		console.log ((new Date()) + " #> Session closed ...");
 		connectivity.RemoveIoTClient(index);
 		connectivity.PrintIoTClient();
+		ws_clients.splice(sec_index, 1);
 	});
 });
 
