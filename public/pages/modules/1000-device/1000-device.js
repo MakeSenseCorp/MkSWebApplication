@@ -23,8 +23,7 @@ function DeviceStatus(uuid) {
 
 function GetSensorsData_Handler(data) {
 	MkSAddDeviceListener(data.device.uuid, GetSensorsData_Handler);
-	if (data.device.cmd == "get_device_config") {
-		console.log(data);
+	if (data.device.command == "get_device_config") {
 		document.getElementById(data.device.uuid + "-device-update_delay").value 		= data.payload.interval;
 		document.getElementById(data.device.uuid + "-device-on_change_update").checked 	= ConvertBoleanToJavascript(data.payload.update_on_change);
 		document.getElementById(data.device.uuid + "-device-history_log").checked 		= ConvertBoleanToJavascript(data.payload.update_local_db);
@@ -34,7 +33,7 @@ function GetSensorsData_Handler(data) {
 		} else {
 			$("#" + data.device.uuid + "-device-update_delay").prop('disabled', false);
 		}
-	} else if (data.device.cmd == "set_device_config") {
+	} else if (data.device.command == "set_device_config") {
 		document.getElementById(data.device.uuid + "-device-update_delay").value 		= data.payload.interval;
 		document.getElementById(data.device.uuid + "-device-on_change_update").checked 	= ConvertBoleanToJavascript(data.payload.update_on_change);
 		document.getElementById(data.device.uuid + "-device-history_log").checked 		= ConvertBoleanToJavascript(data.payload.update_local_db);
@@ -44,7 +43,7 @@ function GetSensorsData_Handler(data) {
 		} else {
 			$("#" + data.device.uuid + "-device-update_delay").prop('disabled', false);
 		}
-	} else if (data.device.cmd == "get_device_sensors") {
+	} else if (data.device.command == "get_device_sensors") {
 		if (data.payload.sensors.length > 0) {
 			if (document.getElementById(data.device.uuid + '-modal-sensors').innerHTML == "") {
 				html = "<div class=\"table-responsive\">" +

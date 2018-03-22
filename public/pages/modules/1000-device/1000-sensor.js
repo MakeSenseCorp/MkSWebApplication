@@ -158,11 +158,11 @@ function onClickSwitch (sesnorUuid, deviceUuid, value) {
 
 function GetSensorsData_Handler(data) {
 	MkSAddDeviceListener(data.device.uuid, GetSensorsData_Handler);
-	if (data.device.cmd == "get_device_info") {
+	if (data.device.command == "get_device_info") {
 		ConstructSensors(data);
-	} else if (data.device.cmd == "get_device_sensors") {
+	} else if (data.device.command == "get_device_sensors") {
 		ConstructSensors(data);
-	} else if (data.device.cmd == "get_sensor_info") {
+	} else if (data.device.command == "get_sensor_info") {
 		var isSensorFound = false;
 		for (var index in data.payload.sensors) {
 			sensor = data.payload.sensors[index];
@@ -187,7 +187,7 @@ function GetSensorsData_Handler(data) {
 									}, function (res) {
 									});
 		}
-	} else if (data.device.cmd == "get_sensor_graph") {
+	} else if (data.device.command == "get_sensor_graph") {
 		var data = data.payload.data;
 		var plotData = [];
 		var timeslice = data[0].ts - data[data.length-1].ts;
@@ -253,7 +253,6 @@ function UpdateSensorInfo_Device_1000 (uuid) {
 
 function OnDeviceLoaded_1000(uuid, isShowAll) {
 	ShowAllSensors = isShowAll;
-	console.log(ShowAllSensors);
 	MkSRemoveDeviceListener(uuid, GetSensorsData_Handler);
 	MkSAddDeviceListener(uuid, GetSensorsData_Handler);
 	MkSDeviceSendGetRequest({  	url: GetServerUrl(),

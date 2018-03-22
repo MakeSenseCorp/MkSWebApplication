@@ -95,7 +95,6 @@ function ObjectIoTConnection (socket, uuid) {
 function ObjectIoTClients () {
 	self = this;
 	
-	this.Clients 		= [];
 	this.ClientsTable 	= {};
 
 	return this;
@@ -166,20 +165,6 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 	this.IoTClients 	= iotClients;
 	this.IoTBrowsers 	= iotBrowsers;
 	this.LocalDB		= localDB;
-	
-	/*this.AddIoTClient = function (deviceUUID, client) {
-		var item = GetIoTClient(client.UUID);
-		if (item === undefined) {
-			var index = this.IoTClients.Clients.push(client) - 1;
-			console.log("[REST API]# Adding IoT device to cache " + client.UUID + " [" + index + "]");
-			this.IoTClients.ClientsTable[deviceUUID] = index;
-			return index;
-		} else {
-			console.log("------------------------------------------------------------------");
-		}
-		
-		return -1;
-	}*/
 
 	this.AddIoTClient = function (client) {
 		var iotConnection = GetIoTClient(client.UUID);
@@ -193,29 +178,21 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 		return client.UUID;
 	}
 
-	/*this.RemoveIoTClient = function (index) {
-		var client = this.IoTClients.Clients[index];
-
-		if (client !== undefined) {
-			client.Listeners = [];
-		}
-
-		this.IoTClients.Clients.splice(index, 1);
-	}*/
-
 	this.RemoveIoTClient = function (uuid) {
 		var iotConnection = this.IoTClients.ClientsTable[uuid];
 
 		if (iotConnection !== undefined) {
+			if (iotConnection.Listeners !== undefined) {
+				for (var index in iotConnection.Listeners) {
+					RegisterListenerSync(uuid, iotConnection.Listeners[index]);
+				}
+			}
+
 			iotConnection.Listeners = [];
 		}
 
 		delete this.IoTClients.ClientsTable[uuid];
 	}
-
-	/*this.GetIoTClient = function (deviceUUID) {
-		return this.IoTClients.Clients[this.IoTClients.ClientsTable[deviceUUID]];
-	}*/
 
 	this.GetIoTClient = function (uuid) {
 		return this.IoTClients.ClientsTable[uuid];
@@ -230,6 +207,14 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 		callback ({info:"registered"});
 	}
 
+	this.RegisterListenerSync = function (publisherDeviceUUID, listenerDeviceUUID) {
+		var task = {
+			publisher: publisherDeviceUUID,
+			subscriber: listenerDeviceUUID
+		};
+		RegisterRequestList.push(task);
+	}
+
 	this.UnregisterListener = function (publisherDeviceUUID, listenerDeviceUUID, callback) {
 		var obj = GetIoTClient(publisherDeviceUUID);
 		for (var index in obj.Listeners) {
@@ -242,14 +227,6 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 		callback ({error:"No registered device found", "errno":11});
 	}
 
-	/*this.PrintIoTClient = function () {
-		console.log("*** Device List ***");
-		for (index = 0; index < this.IoTClients.Clients.length; index++) {
-			console.log ("Device UUID: " + this.IoTClients.Clients[index].UUID + " [" + index + "]");
-		}
-		console.log("*** Device List ***");
-	}*/
-
 	this.PrintIoTClient = function () {
 		console.log("*** Device List ***");
 		for (var key in this.IoTClients.ClientsTable) {
@@ -259,17 +236,6 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 		}
 		console.log("*** Device List ***");
 	}
-	
-	/*this.SendDirectMessage = function (deviceUUID, message, callback) {
-		var connection = this.IoTClients.Clients[this.IoTClients.ClientsTable[deviceUUID]];
-		if (connection == undefined) {
-			callback ({error:"Device not connected", "errno":10});
-		} else {
-			connection.Socket.send(message);
-			callback ({response:"direct"});
-			return;
-		}
-	}*/
 
 	this.SendDirectMessage = function (deviceUUID, message, callback) {
 		var connection = GetIoTClient(deviceUUID);
@@ -277,49 +243,13 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 			callback ({error:"Device not connected", "errno":10});
 		} else {
 			connection.Socket.send(message);
-			/*for (var index in connection.Listeners) {
-				var obj = this.GetIoTClient(connection.Listeners[index]);
-				if (obj !== undefined) {
-					obj.Socket.send(message);
-					console.log("[REST API]# Send to listener " + obj.UUID);
-				}
-			}*/
 			callback ({response:"direct"});
 			return;
 		}
 	}
 
-	/*this.SendDirectMessageToListeners = function (deviceUUID, message, key) {
-		var connection = this.IoTClients.Clients[this.IoTClients.ClientsTable[deviceUUID]];
-		if (connection == undefined) {
-			return "ERROR: No client.";
-		} else {
-			for (var index in connection.Listeners) {
-				var obj = this.IoTClients.Clients[this.IoTClients.ClientsTable[connection.Listeners[index]]];
-				if (obj!== undefined) {
-					if (message !== undefined) {
-						var msg = {
-							request: "direct",
-							data: {
-								device: {
-									cmd: "publish"
-								},
-								payload: message
-							}
-						};
-						obj.Socket.send(JSON.stringify(msg));
-					} else {
-						console.log("[REST API]# Send to listener " + obj.UUID + " ... Message UNDEFINED");
-					}
-				}
-			}
-			return "Info: Success";
-			return;
-		}
-	}*/
-
-	this.SendDirectMessageToListeners = function (deviceUUID, message, key) {
-		var connection = GetIoTClient(deviceUUID);
+	this.SendDirectMessageToListeners = function (message) {
+		var connection = GetIoTClient(message.source);
 		if (connection == undefined) {
 			return "ERROR: No client.";
 		} else {
@@ -327,21 +257,8 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 				var obj = GetIoTClient(connection.Listeners[index]);
 				if (obj!== undefined) {
 					if (message !== undefined) {
-						/*PacketsToSendList.push({
-							uuid: obj.UUID,
-							data: message,
-							key: key
-						});*/
-						var msg = {
-							request: "direct",
-							data: {
-								device: {
-									cmd: "publish"
-								},
-								payload: message
-							}
-						};
-						obj.Socket.send(JSON.stringify(msg));
+						console.log("[REST API]# Send to listener " + obj.UUID + " ...");
+						obj.Socket.send(JSON.stringify(message.data));
 					} else {
 						console.log("[REST API]# Send to listener " + obj.UUID + " ... Message UNDEFINED");
 					}
@@ -388,7 +305,6 @@ function FindUserDevice (key, uuid) {
 	return -1;
 }
 
-// var StatusHandler = setInterval (StatusHandlerFunc, 10000);
 var DisconnectedDeviceHandler = setInterval (DisconnectedDeviceHandlerFunc, 5000);
 
 var ws_clients = [];
@@ -429,37 +345,21 @@ wsServer.on('request', function(request) {
 	connectivity.PrintIoTClient();	
 	connection.on('message', function(message) {
 		if (message.type === 'utf8') {
-			// console.log ((new Date()) + " #> Message (" + message.utf8Data + ") ...");
 			connection.LastMessageData = message.utf8Data;
-
-			/*
-			{ 	response: 'direct',
-				data: 
-				{ 	key: 'ac6de837-7863-72a9-c789-a0aae7e9d93e',
-					device: 
-					{ 	uuid: 'ac6de837-7863-72a9-c789-b0aae7e9d93e',
-						type: 1000,
-						cmd: 'get_device_sensors',
-						timestamp: 1521186763
-					},
-					payload: {	sensors: [Object]
-					}
-				} 
-			}
-			*/
-
 			jsonData = JSON.parse(message.utf8Data);
-			
+
+			// TODO - Check validity of nesessary values. Gatway MUST never fail.
+
 			if (jsonData.data === undefined) {
 				return;
 			}
 			
-			if (jsonData.data.key === undefined) {
+			if (jsonData.user.key === undefined) {
 				return;
 			}
 			
 			// Verifing the key from this message.
-			var MassageKey = jsonData.data.key;
+			var MassageKey = jsonData.user.key;
 			if (Local.UserDictionary[MassageKey] === undefined) {
 				console.log((new Date()) + " [ERROR] User with KEY " + MassageKey + " is NOT DEFINED.");
 				return;
@@ -467,25 +367,20 @@ wsServer.on('request', function(request) {
 			
 			// Saving device in server local database for monitoring.
 			jsonData.data.device.timestamp = moment().unix();
-			if (jsonData.response == "direct") {
-			} else {
-				Local.DeviceListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.device;
-				Local.SensorListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.payload.sensors;
-				Local.UserDictionary[MassageKey].Sensors = jsonData.data.sensors;
-				console.log("Key: " + MassageKey + ", " + jsonData.data.sensors);
-				// TODO - Save to SQLite database.
-			}
+			Local.DeviceListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.device;
 
-			connectivity.SendDirectMessageToListeners(jsonData.data.device.uuid, jsonData.data.payload, jsonData.data.key);
-			/*var json = JSON.stringify({ type:'message', data: 'data' });
-			for (var i=0; i < ws_clients.length; i++) {
-	          	ws_clients[i].sendUTF(jsonData.data);
-	        }*/
+			// Local.SensorListDictWebSocket[jsonData.data.device.uuid] = jsonData.data.payload.sensors;
+			// Local.UserDictionary[MassageKey].Sensors = jsonData.data.sensors;
+			// console.log("Key: " + MassageKey + ", " + jsonData.data.sensors);
+			// TODO - Save to SQLite database.
+
+			if (jsonData.message_type == "BROADCAST") {
+				connectivity.SendDirectMessageToListeners(jsonData);
+			}
 			
 			// Sending data to application. No check needed application will use data it needs. (user key was verified)
-			WebConnections = WebSSEClientsTable[jsonData.data.key];
+			WebConnections = WebSSEClientsTable[jsonData.user.key];
 			if (WebConnections != undefined) {
-				// console.log ((new Date()) + " #> Sending data to web client ... \n" + JSON.stringify(jsonData.data));
 				for (var index in WebConnections) {
 					WebConnections[index].session.write("data: " + JSON.stringify(jsonData.data) + "\n\n");
 				}
@@ -499,7 +394,6 @@ wsServer.on('request', function(request) {
 	connection.on('close', function(connection) {
 		console.log ((new Date()) + " #> Session closed ...");
 		connectivity.RemoveIoTClient(uuid);
-		// connectivity.RemoveIoTClient(index);
 		connectivity.PrintIoTClient();
 		ws_clients.splice(sec_index, 1);
 	});

@@ -112,16 +112,23 @@ function MkSDeviceGetAllOnUserKey(obj, callback) {
 
 function MkSDeviceSendGetRequest(obj, callback) {
 	request = {
-		request: "direct",
+		message_type: "DIRECT",
+		destination: obj.uuid,
+		source: "WEBFACE",
 		data: {
-			key:obj.key,
 			device: {
-				cmd:obj.cmd
+				command: obj.cmd,
+				timestamp: Date.now()
 			},
 			payload: obj.payload
+		},
+		user: {
+			key: obj.key
+		},
+		additional: {
 		}
 	};
-	console.log(request);
+	// console.log(request);
 	$.ajax({
 	    url: obj.url + 'cmd/device/node/direct/' + obj.key + "/" + obj.uuid + "/" + JSON.stringify(request),
 	    type: "GET",

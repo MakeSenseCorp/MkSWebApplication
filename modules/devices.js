@@ -68,8 +68,7 @@ module.exports = function(app, security, sql, connectivity, storage) {
 		});
 	});
 	
-	app.get('/cmd/device/node/direct/:key/:uuid/:request', function(req, res) {		
-		console.log("/cmd/device/node/direct " + req.params.uuid);
+	app.get('/cmd/device/node/direct/:key/:uuid/:request', function(req, res) {
 		security.CheckUUID(req.params.key, function (valid) {
 			if (valid) {
 				connectivity.SendDirectMessage(req.params.uuid, req.params.request, function(msg) {
