@@ -135,8 +135,30 @@ function SendPacketsFunc () {
 		console.log("Messages send to " + messageTask.uuid);
 		console.log("Messages left to send " + PacketsToSendList.length);
 	}
+} // var SendPacketsHandler = setInterval (SendPacketsFunc, 5000);
+
+var RegisterRequestList = [];
+function RegisterDevicesFunc () {
+	if (RegisterRequestList.length > 0) {
+		var task = RegisterRequestList.pop();
+		var iotPublisher = GetIoTClient(task.publisher);
+		if (iotPublisher !== undefined) {
+			// Check if device already registered.
+			for (var index in iotPublisher.Listeners) {
+				if (iotPublisher.Listeners[index] == task.subscriber) {
+					console.log("Registered subscriber " + task.subscriber + " to " + task.publisher);
+					return;
+				}
+			}
+			iotPublisher.Listeners.push(task.subscriber);
+			console.log("Registered subscriber " + task.subscriber + " to " + task.publisher);
+		} else {
+			console.log("ERROR: Could not register device to a UNDEFINED publisher");
+			RegisterRequestList.push(task);
+		}
+	}
 }
-var SendPacketsHandler = setInterval (SendPacketsFunc, 5000);
+var RegisterDevicesHandler = setInterval (RegisterDevicesFunc, 5000);
 
 function Connectivity (iotClients, iotBrowsers, localDB) {
 	self = this;
@@ -145,40 +167,67 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 	this.IoTBrowsers 	= iotBrowsers;
 	this.LocalDB		= localDB;
 	
-	this.AddIoTClient = function (deviceUUID, client) {
-		console.log("[REST API]# Adding IoT device to cache " + client.UUID);
+	/*this.AddIoTClient = function (deviceUUID, client) {
 		var item = GetIoTClient(client.UUID);
 		if (item === undefined) {
 			var index = this.IoTClients.Clients.push(client) - 1;
+			console.log("[REST API]# Adding IoT device to cache " + client.UUID + " [" + index + "]");
 			this.IoTClients.ClientsTable[deviceUUID] = index;
 			return index;
+		} else {
+			console.log("------------------------------------------------------------------");
 		}
 		
 		return -1;
+	}*/
+
+	this.AddIoTClient = function (client) {
+		var iotConnection = GetIoTClient(client.UUID);
+		if (iotConnection === undefined) {
+			console.log("[REST API]# Device added [" + client.UUID + "]");
+			this.IoTClients.ClientsTable[client.UUID] = client;
+		} else {
+			console.log("[REST API]# Device [" + client.UUID + "] already in cache");
+		}
+
+		return client.UUID;
 	}
 
-	this.RemoveIoTClient = function (index) {
+	/*this.RemoveIoTClient = function (index) {
 		var client = this.IoTClients.Clients[index];
-		client.Listeners = [];
+
+		if (client !== undefined) {
+			client.Listeners = [];
+		}
 
 		this.IoTClients.Clients.splice(index, 1);
+	}*/
+
+	this.RemoveIoTClient = function (uuid) {
+		var iotConnection = this.IoTClients.ClientsTable[uuid];
+
+		if (iotConnection !== undefined) {
+			iotConnection.Listeners = [];
+		}
+
+		delete this.IoTClients.ClientsTable[uuid];
 	}
 
-	this.GetIoTClient = function (deviceUUID) {
+	/*this.GetIoTClient = function (deviceUUID) {
 		return this.IoTClients.Clients[this.IoTClients.ClientsTable[deviceUUID]];
+	}*/
+
+	this.GetIoTClient = function (uuid) {
+		return this.IoTClients.ClientsTable[uuid];
 	}
 
 	this.RegisterListener = function (publisherDeviceUUID, listenerDeviceUUID, callback) {
-		var obj = GetIoTClient(publisherDeviceUUID);
-		if (obj !== undefined) {
-			// TODO - Check if device already registered.
-			obj.Listeners.push(listenerDeviceUUID);
-			callback ({info:"registered"});
-		} else {
-			// TODO: Must add to task DB for publisherDeviceUUID to add later when login.
-			console.log("ERROR: Could not register device to a UNDEFINED publisher");
-			callback ({error:"No registered device found", "errno":11});
-		}
+		var task = {
+			publisher: publisherDeviceUUID,
+			subscriber: listenerDeviceUUID
+		};
+		RegisterRequestList.push(task);
+		callback ({info:"registered"});
 	}
 
 	this.UnregisterListener = function (publisherDeviceUUID, listenerDeviceUUID, callback) {
@@ -193,16 +242,37 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 		callback ({error:"No registered device found", "errno":11});
 	}
 
-	this.PrintIoTClient = function () {
+	/*this.PrintIoTClient = function () {
 		console.log("*** Device List ***");
 		for (index = 0; index < this.IoTClients.Clients.length; index++) {
 			console.log ("Device UUID: " + this.IoTClients.Clients[index].UUID + " [" + index + "]");
 		}
 		console.log("*** Device List ***");
+	}*/
+
+	this.PrintIoTClient = function () {
+		console.log("*** Device List ***");
+		for (var key in this.IoTClients.ClientsTable) {
+			if (this.IoTClients.ClientsTable.hasOwnProperty(key)) {
+				console.log ("Device UUID: " + this.IoTClients.ClientsTable[key].UUID);
+			}
+		}
+		console.log("*** Device List ***");
 	}
 	
-	this.SendDirectMessage = function (deviceUUID, message, callback) {
+	/*this.SendDirectMessage = function (deviceUUID, message, callback) {
 		var connection = this.IoTClients.Clients[this.IoTClients.ClientsTable[deviceUUID]];
+		if (connection == undefined) {
+			callback ({error:"Device not connected", "errno":10});
+		} else {
+			connection.Socket.send(message);
+			callback ({response:"direct"});
+			return;
+		}
+	}*/
+
+	this.SendDirectMessage = function (deviceUUID, message, callback) {
+		var connection = GetIoTClient(deviceUUID);
 		if (connection == undefined) {
 			callback ({error:"Device not connected", "errno":10});
 		} else {
@@ -219,13 +289,42 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 		}
 	}
 
-	this.SendDirectMessageToListeners = function (deviceUUID, message, key) {
+	/*this.SendDirectMessageToListeners = function (deviceUUID, message, key) {
 		var connection = this.IoTClients.Clients[this.IoTClients.ClientsTable[deviceUUID]];
 		if (connection == undefined) {
 			return "ERROR: No client.";
 		} else {
 			for (var index in connection.Listeners) {
 				var obj = this.IoTClients.Clients[this.IoTClients.ClientsTable[connection.Listeners[index]]];
+				if (obj!== undefined) {
+					if (message !== undefined) {
+						var msg = {
+							request: "direct",
+							data: {
+								device: {
+									cmd: "publish"
+								},
+								payload: message
+							}
+						};
+						obj.Socket.send(JSON.stringify(msg));
+					} else {
+						console.log("[REST API]# Send to listener " + obj.UUID + " ... Message UNDEFINED");
+					}
+				}
+			}
+			return "Info: Success";
+			return;
+		}
+	}*/
+
+	this.SendDirectMessageToListeners = function (deviceUUID, message, key) {
+		var connection = GetIoTClient(deviceUUID);
+		if (connection == undefined) {
+			return "ERROR: No client.";
+		} else {
+			for (var index in connection.Listeners) {
+				var obj = GetIoTClient(connection.Listeners[index]);
 				if (obj!== undefined) {
 					if (message !== undefined) {
 						/*PacketsToSendList.push({
@@ -307,7 +406,8 @@ wsServer.on('request', function(request) {
 	// TODO - Check for user key.
 
 	console.log("[REST API]# Registering device: " + request.httpRequest.headers.uuid)
-	var index = connectivity.AddIoTClient(request.httpRequest.headers.uuid, new ObjectIoTConnection(connection, request.httpRequest.headers.uuid));
+	// var index = connectivity.AddIoTClient(request.httpRequest.headers.uuid, new ObjectIoTConnection(connection, request.httpRequest.headers.uuid));
+	var uuid = connectivity.AddIoTClient(new ObjectIoTConnection(connection, request.httpRequest.headers.uuid));
 	var sec_index = ws_clients.push(connection) - 1;
 	console.log("Payload " + request.httpRequest.headers.payload);
 	var jData = JSON.parse(request.httpRequest.headers.payload);
@@ -398,7 +498,8 @@ wsServer.on('request', function(request) {
 
 	connection.on('close', function(connection) {
 		console.log ((new Date()) + " #> Session closed ...");
-		connectivity.RemoveIoTClient(index);
+		connectivity.RemoveIoTClient(uuid);
+		// connectivity.RemoveIoTClient(index);
 		connectivity.PrintIoTClient();
 		ws_clients.splice(sec_index, 1);
 	});
