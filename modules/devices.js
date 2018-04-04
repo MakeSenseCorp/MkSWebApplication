@@ -44,7 +44,7 @@ module.exports = function(app, security, sql, connectivity, storage) {
 					console.log("ERROR: User undefined.");
 					res.json({error:"User undefined"});
 				} else {
-					console.log(user.UserDeviceList);
+					// console.log(user.UserDeviceList);
 					res.json(user.UserDeviceList);
 				}
 			} else {

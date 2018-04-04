@@ -41,8 +41,10 @@ function MkSRegisterToSensorListener(obj) {
 			if (e.data != null) {
 				var jsonData = JSON.parse(e.data);
 				if (jsonData.device != null) {
+					console.log("Publishing to " + jsonData.device.uuid);
 					listeners = objInstance.DeviceListeners[jsonData.device.uuid];
 					for (var index in listeners) {
+						console.log(index);
 						listener = listeners[index];
 						listeners.splice(listeners.indexOf(listener), 1);
 						listener(jsonData);
@@ -113,6 +115,33 @@ function MkSDeviceGetAllOnUserKey(obj, callback) {
 function MkSDeviceSendGetRequest(obj, callback) {
 	request = {
 		message_type: "DIRECT",
+		destination: obj.uuid,
+		source: "WEBFACE",
+		data: {
+			device: {
+				command: obj.cmd,
+				timestamp: Date.now()
+			},
+			payload: obj.payload
+		},
+		user: {
+			key: obj.key
+		},
+		additional: {
+		}
+	};
+	// console.log(request);
+	$.ajax({
+	    url: obj.url + 'cmd/device/node/direct/' + obj.key + "/" + obj.uuid + "/" + JSON.stringify(request),
+	    type: "GET",
+	    dataType: "json",
+	    success: callback
+	});
+}
+
+function MkSDeviceSendGetRequestWebface(obj, callback) {
+	request = {
+		message_type: "WEBFACE",
 		destination: obj.uuid,
 		source: "WEBFACE",
 		data: {

@@ -242,6 +242,7 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 		if (connection == undefined) {
 			callback ({error:"Device not connected", "errno":10});
 		} else {
+			console.log("Message for " + deviceUUID + ".");
 			connection.Socket.send(message);
 			callback ({response:"direct"});
 			return;
@@ -258,7 +259,7 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 				if (obj!== undefined) {
 					if (message !== undefined) {
 						console.log("[REST API]# Send to listener " + obj.UUID + " ...");
-						obj.Socket.send(JSON.stringify(message.data));
+						obj.Socket.send(JSON.stringify(message));
 					} else {
 						console.log("[REST API]# Send to listener " + obj.UUID + " ... Message UNDEFINED");
 					}
@@ -376,11 +377,20 @@ wsServer.on('request', function(request) {
 
 			if (jsonData.message_type == "BROADCAST") {
 				connectivity.SendDirectMessageToListeners(jsonData);
+			} else if (jsonData.message_type == "WEBFACE") {
+			} else if (jsonData.message_type == "DIRECT") {
+			} else if (jsonData.message_type == "PRIVATE") {
+				console.log("PRIVATE");
+				return;
+			} else if (jsonData.message_type == "CUSTOM") {
+				console.log("CUSTOM");
+				return;
 			}
 			
 			// Sending data to application. No check needed application will use data it needs. (user key was verified)
 			WebConnections = WebSSEClientsTable[jsonData.user.key];
 			if (WebConnections != undefined) {
+				console.log("[INFO] Writing to WEBFACEs");
 				for (var index in WebConnections) {
 					WebConnections[index].session.write("data: " + JSON.stringify(jsonData.data) + "\n\n");
 				}

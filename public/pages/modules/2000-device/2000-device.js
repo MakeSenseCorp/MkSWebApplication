@@ -1,4 +1,7 @@
 var UserSensors_2000 = null;
+var Context_2000 = {
+	uuid: ""
+};
 
 /*
  * All these methods below are required to be defined.
@@ -23,26 +26,49 @@ function DeviceStatus(uuid) {
 	});
 }
 
+function GetSensorsData_Handler_2000(data) {
+	if (Context_2000.uuid == data.device.uuid) {
+		MkSAddDeviceListener(data.device.uuid, GetSensorsData_Handler_2000);
+	}
+
+	var html = "";
+
+	var sensors = data.payload.sensors;
+	for (idx = 0; idx < sensors.length; idx++) {
+		var sensor = sensors[idx];
+		html += "<option id=\"" + sensor.uuid + "\">" + sensor.name + "</option>";
+	}
+
+	document.getElementById("sensor-selector-left").innerHTML = html;
+	document.getElementById("sensor-selector-right").innerHTML = html;
+
+	console.log(data);
+}
+
 function OpenInfoModalWindow_Device_2000(uuid) {
 	var self = this;
 	
+	Context_2000.uuid = uuid;
+
+	MkSRemoveDeviceListener(uuid, GetSensorsData_Handler_2000);
+	MkSAddDeviceListener(uuid, GetSensorsData_Handler_2000);
+
 	MkSOpenDeviceModal(uuid);
 	MkSDeviceGetAllOnUserKey({  url: GetServerUrl(),
 								key: localStorage.getItem("key")
 							}, function (res) {
-							 	UserSensors_2000 = res;
-
-							 	var html = "";
-							 	for (deviceIdx = 0; deviceIdx < UserSensors_2000.length; deviceIdx++) {
-									var device = UserSensors_2000[deviceIdx];
-									for (sensorIdx = 0; sensorIdx < device.sensors.length; sensorIdx++) {
-										var sensor = device.sensors[sensorIdx];
-										html += "<option>" + sensor.uuid + "</option>"
-									}
+							 	for (deviceIdx = 0; deviceIdx < res.length; deviceIdx++) {
+									var device = res[deviceIdx];
+									// Our listener should be set to destination device UUID.
+									MkSAddDeviceListener(device.uuid, GetSensorsData_Handler_2000);
+									// Send direct request but only WEBFACE will get the response.
+									MkSDeviceSendGetRequestWebface({  	url: GetServerUrl(),
+																		key: localStorage.getItem("key"),
+																		uuid: device.uuid,
+																		cmd: "get_device_sensors",
+																		payload: { }
+								 	}, function (res) { });
 								}
-
-								document.getElementById("sensor-selector-left").innerHTML = html;
-								document.getElementById("sensor-selector-right").innerHTML = html;
 							});
 
 
@@ -56,14 +82,14 @@ function UpdateDeviceInfo_Device_2000(uuid) {
 	var leftElement = document.getElementById("sensor-selector-left");
 	var rightElement = document.getElementById("sensor-selector-right");
 
-	var leftValue = leftElement.options[leftElement.selectedIndex].value;
-	var rightValue = rightElement.options[rightElement.selectedIndex].value;
+	var leftValue = leftElement.options[leftElement.selectedIndex].id;
+	var rightValue = rightElement.options[rightElement.selectedIndex].id;
 	console.log(leftValue + " <-> " + rightValue);
 
 	MkSDeviceSendGetRequest({  	url: GetServerUrl(),
 								key: localStorage.getItem("key"),
 								uuid: uuid,
-								cmd: "get_device_config",
+								cmd: "set_device_items",
 								payload: { }
 							 }, function (res) { });
 }
