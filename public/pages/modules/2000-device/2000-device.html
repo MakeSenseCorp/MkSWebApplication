@@ -59,27 +59,30 @@
 							</form>
 							<form role="form">
 								<fieldset>
-									<div align="center">
-										<div style="border-radius: 15px; border: 2px solid #73AD21;width:100%;height:70px">
-											<table>
-												<tr height="70px">
-													<td align="center" width="49%">
-														<select id="sensor-selector-left" class="form-control">
-						                                    <option>Not Connected</option>
-						                                </select>
-													</td>
-													<td align="center" bgcolor="0x000000" width="2%"></td>
-													<td align="center" width="49%">
-														<div class="form-group">
-															<select id="sensor-selector-right" class="form-control pull-right">
-						                                    	<option>Not Connected</option>
-						                                	</select>
-														</div>
-													</td>
-												</tr>
-											</table>
+									<div class="form-group">
+										<div class="row">
+											<div class="col-xs-6">
+												<label>Left Window</label>
+											</div>
+											<div class="col-xs-6">
+												<select id="sensor-selector-left" class="form-control">
+				                                    <option>Not Connected</option>
+				                                </select>
+											</div>
 										</div>
-									</div><br>
+									</div>
+									<div class="form-group">
+										<div class="row">
+											<div class="col-xs-6">
+												<label>Right Window</label>
+											</div>
+											<div class="col-xs-6">
+												<select id="sensor-selector-right" class="form-control pull-right">
+			                                    	<option>Not Connected</option>
+			                                	</select>
+											</div>
+										</div>
+									</div>
 									<div class="form-group">
 										<button type="button" class="btn btn-primary pull-right" onClick="UpdateDeviceInfo_Device_2000('[DEVICE_UUID]')">Update Changes</button>
 									</div>

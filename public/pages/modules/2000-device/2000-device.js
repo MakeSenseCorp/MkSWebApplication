@@ -1,6 +1,8 @@
 var UserSensors_2000 = null;
 var Context_2000 = {
-	uuid: ""
+	uuid: "",
+	left_uuid: "",
+	right_uuid: ""
 };
 
 /*
@@ -31,18 +33,22 @@ function GetSensorsData_Handler_2000(data) {
 		MkSAddDeviceListener(data.device.uuid, GetSensorsData_Handler_2000);
 	}
 
-	var html = "";
+	if ("get_device_sensors" == data.device.command) {
+		var html = "";
+		var sensors = data.payload.sensors;
+		for (idx = 0; idx < sensors.length; idx++) {
+			var sensor = sensors[idx];
+			html += "<option value=\"" + sensor.uuid + "\" data-device=\"" + data.device.uuid + "\">" + sensor.name + "</option>";
+		}
 
-	var sensors = data.payload.sensors;
-	for (idx = 0; idx < sensors.length; idx++) {
-		var sensor = sensors[idx];
-		html += "<option id=\"" + sensor.uuid + "\">" + sensor.name + "</option>";
+		document.getElementById("sensor-selector-left").innerHTML = html;
+		document.getElementById("sensor-selector-right").innerHTML = html;
+		document.getElementById("sensor-selector-left").value = Context_2000.left_uuid;
+		document.getElementById("sensor-selector-right").value = Context_2000.right_uuid;
+	} else if ("get_device_items" == data.device.command) {
+		Context_2000.left_uuid = data.payload.left;
+		Context_2000.right_uuid = data.payload.right;
 	}
-
-	document.getElementById("sensor-selector-left").innerHTML = html;
-	document.getElementById("sensor-selector-right").innerHTML = html;
-
-	console.log(data);
 }
 
 function OpenInfoModalWindow_Device_2000(uuid) {
@@ -52,6 +58,13 @@ function OpenInfoModalWindow_Device_2000(uuid) {
 
 	MkSRemoveDeviceListener(uuid, GetSensorsData_Handler_2000);
 	MkSAddDeviceListener(uuid, GetSensorsData_Handler_2000);
+
+	MkSDeviceSendGetRequestWebface({  	url: GetServerUrl(),
+										key: localStorage.getItem("key"),
+										uuid: uuid,
+										cmd: "get_device_items",
+										payload: {}
+							 }, function (res) { });
 
 	MkSOpenDeviceModal(uuid);
 	MkSDeviceGetAllOnUserKey({  url: GetServerUrl(),
@@ -71,7 +84,6 @@ function OpenInfoModalWindow_Device_2000(uuid) {
 								}
 							});
 
-
 	// 1. Get all sensors.
 	// 2. Get assigned sensors from Node.
 	// 3. Remove asigned sensors.
@@ -82,16 +94,19 @@ function UpdateDeviceInfo_Device_2000(uuid) {
 	var leftElement = document.getElementById("sensor-selector-left");
 	var rightElement = document.getElementById("sensor-selector-right");
 
-	var leftValue = leftElement.options[leftElement.selectedIndex].id;
-	var rightValue = rightElement.options[rightElement.selectedIndex].id;
-	console.log(leftValue + " <-> " + rightValue);
-
 	MkSDeviceSendGetRequest({  	url: GetServerUrl(),
 								key: localStorage.getItem("key"),
 								uuid: uuid,
 								cmd: "set_device_items",
-								payload: { }
-							 }, function (res) { });
+								payload: {
+									right_publiser_uuid: rightElement.options[rightElement.selectedIndex].dataset.device,
+									left_publiser_uuid: leftElement.options[rightElement.selectedIndex].dataset.device,
+									right: rightElement.options[rightElement.selectedIndex].value,
+									left: leftElement.options[leftElement.selectedIndex].value
+								}
+							 }, function (res) {
+							 	$('#generic-modal-update-sucess').modal('show');
+							 });
 }
 
 function LoadDeviceInfo_Device_2000(uuid) {

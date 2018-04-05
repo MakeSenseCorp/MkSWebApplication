@@ -381,6 +381,9 @@ wsServer.on('request', function(request) {
 			} else if (jsonData.message_type == "DIRECT") {
 			} else if (jsonData.message_type == "PRIVATE") {
 				console.log("PRIVATE");
+				connectivity.SendDirectMessage(jsonData.destination, JSON.stringify(jsonData), function (e) {
+
+				});
 				return;
 			} else if (jsonData.message_type == "CUSTOM") {
 				console.log("CUSTOM");

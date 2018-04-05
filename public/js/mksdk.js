@@ -41,10 +41,8 @@ function MkSRegisterToSensorListener(obj) {
 			if (e.data != null) {
 				var jsonData = JSON.parse(e.data);
 				if (jsonData.device != null) {
-					console.log("Publishing to " + jsonData.device.uuid);
 					listeners = objInstance.DeviceListeners[jsonData.device.uuid];
 					for (var index in listeners) {
-						console.log(index);
 						listener = listeners[index];
 						listeners.splice(listeners.indexOf(listener), 1);
 						listener(jsonData);
