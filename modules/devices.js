@@ -117,7 +117,7 @@ module.exports = function(app, security, sql, connectivity, storage) {
 
 		security.CheckUUID(jData.key, function (valid) {
 			if (valid) {
-				connectivity.RegisterListener(jData.payload.publisher_uuid, jData.payload.listener_uuid, function(msg) {
+				connectivity.RegisterSubscriber(jData.payload.publisher_uuid, jData.payload.listener_uuid, function(msg) {
 					console.log("[REST API]# Device " + jData.payload.listener_uuid + " request queued ...");
 					res.json(msg);
 				});

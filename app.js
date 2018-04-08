@@ -157,7 +157,7 @@ function RegisterDevicesFunc () {
 		}
 	}
 }
-var RegisterDevicesHandler = setInterval (RegisterDevicesFunc, 5000);
+// var RegisterDevicesHandler = setInterval (RegisterDevicesFunc, 5000);
 
 function Connectivity (iotClients, iotBrowsers, localDB) {
 	self = this;
@@ -182,12 +182,6 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 		var iotConnection = this.IoTClients.ClientsTable[uuid];
 
 		if (iotConnection !== undefined) {
-			if (iotConnection.Listeners !== undefined) {
-				for (var index in iotConnection.Listeners) {
-					RegisterListenerSync(uuid, iotConnection.Listeners[index]);
-				}
-			}
-
 			iotConnection.Listeners = [];
 		}
 
@@ -196,6 +190,23 @@ function Connectivity (iotClients, iotBrowsers, localDB) {
 
 	this.GetIoTClient = function (uuid) {
 		return this.IoTClients.ClientsTable[uuid];
+	}
+
+	this.RegisterSubscriber = function (publisher, subscriber, callback) {
+		var iotPublisher = GetIoTClient(publisher);
+		if (iotPublisher !== undefined) {
+			// Check if device already registered.
+			for (var index in iotPublisher.Listeners) {
+				if (iotPublisher.Listeners[index] == subscriber) {
+					console.log("Registered subscriber " + subscriber + " to " + publisher);
+					return;
+				}
+			}
+			iotPublisher.Listeners.push(subscriber);
+			console.log("Registered subscriber " + subscriber + " to " + publisher);
+		} else {
+			console.log("ERROR: Could not register device to a UNDEFINED publisher");
+		}
 	}
 
 	this.RegisterListener = function (publisherDeviceUUID, listenerDeviceUUID, callback) {

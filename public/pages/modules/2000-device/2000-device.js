@@ -32,7 +32,7 @@ function GetSensorsData_Handler_2000(data) {
 	if (Context_2000.uuid == data.device.uuid) {
 		MkSAddDeviceListener(data.device.uuid, GetSensorsData_Handler_2000);
 	}
-
+	
 	if ("get_device_sensors" == data.device.command) {
 		var html = "";
 		var sensors = data.payload.sensors;
