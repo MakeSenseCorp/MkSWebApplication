@@ -6,7 +6,7 @@ $(document).ready(function(){
     var passwordSec = $('#txtPasswordSec').val();
 
     if (password == passwordSec) {
-      var url = "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/insert/user/ux0xhwyqocp/" + username + "/" + password;
+      var url = "http://ec2-18-236-253-240.us-west-2.compute.amazonaws.com/insert/user/ux0xhwyqocp/" + username + "/" + password;
 
       $.get(url, function(data, status) {
         alert (data);

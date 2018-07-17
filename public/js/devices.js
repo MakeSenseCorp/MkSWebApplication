@@ -6,12 +6,15 @@ function Storage() {
 }
 
 function GetDevices() {
+	console.log(GetServerUrl() + 'select/devices/' + GetUserKey());
 	$.ajax({
 	    url: GetServerUrl() + 'select/devices/' + GetUserKey(),
 	    type: "GET",
 	    dataType: "json",
 		async: false,
-	    success: function (data) {		
+	    success: function (data) {
+			console.log(data);
+
 			data.forEach(function(element) {
 				/* element
 				{ 

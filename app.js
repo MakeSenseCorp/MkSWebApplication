@@ -118,7 +118,7 @@ function SendPacketsFunc () {
 		var comm = connectivity.GetIoTClient(messageTask.uuid);
 		// comm.Socket.send(messageTask.data);
 
-		url = "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/cmd/device/node/direct/" + messageTask.key + "/" + messageTask.uuid + "/" + messageTask.data;
+		url = "http://ec2-18-236-253-240.us-west-2.compute.amazonaws.com/cmd/device/node/direct/" + messageTask.key + "/" + messageTask.uuid + "/" + messageTask.data;
 		http.get( url, function(response) {
   			response.setEncoding("utf8");
   			var body = "";

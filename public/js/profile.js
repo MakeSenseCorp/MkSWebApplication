@@ -1,6 +1,6 @@
 $(document).ready(function() {
 	var user = localStorage.getItem("user");
-	var url = "http://ec2-35-161-108-53.us-west-2.compute.amazonaws.com/select/user/" + localStorage.getItem("key") + "/" + localStorage.getItem("userId");
+	var url = "http://ec2-18-236-253-240.us-west-2.compute.amazonaws.com/select/user/" + localStorage.getItem("key") + "/" + localStorage.getItem("userId");
 
     $.get(url, function(data, status) {
     	$("#txtUsername").val(data.userName);
