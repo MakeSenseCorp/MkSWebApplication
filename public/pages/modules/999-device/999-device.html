@@ -4,18 +4,16 @@
             <ul class="chat">
                 <li class="left clearfix">
                     <span class="chat-img pull-left">
-                        <img width="50px" src="[DEVICE_ICON]" alt="User Avatar" class="img-circle" />
+                        <img width="50px"id="[DEVICE_UUID]-node-icon"  src="" class="img-circle" />
                     </span>
                     <div class="chat-body clearfix">
                         <div class="header">
-                            <strong class="primary-font">[DEVICE_NAME]</strong>
+                            <strong id="[DEVICE_UUID]-node-name" class="primary-font"></strong>
                             <small class="pull-right text-muted">
                                 <i class="fa fa-clock-o fa-fw"></i> 12 mins ago
                             </small>
                         </div>
-                        <p>
-                            [DEVICE_DESCRIPTION]
-                        </p>
+                        <p id="[DEVICE_UUID]-node-description"></p>
                         <div class="text-right">
 							<a href="#" onClick="OpenInfoModalWindow_Device_999('[DEVICE_UUID]');">Options<a/>
 						</div>
@@ -41,20 +39,28 @@
 								<fieldset>
 									<fieldset disabled>
 										<div class="form-group">
-											<input id="[DEVICE_UUID]-device-name" class="form-control" placeholder="Device Name" name="devicename" type="devicename" value="[DEVICE_NAME]">
+											<input id="[DEVICE_UUID]-modal-node-name" class="form-control" placeholder="Device Name" name="devicename" type="devicename" value="">
 										</div>
 									</fieldset>
 									<fieldset disabled>
 										<div class="form-group">
-											<input id="[DEVICE_UUID]-device-description" class="form-control" placeholder="Device Description" name="devicedescription" type="devicedescription" value="[DEVICE_DESCRIPTION]">
+											<input id="[DEVICE_UUID]-modal-node-description" class="form-control" placeholder="Device Description" name="devicedescription" type="devicedescription" value="">
 										</div>
 									</fieldset>
 									<fieldset disabled>
 										<div class="form-group">
 											<label>UUID</label>
-											<input id="[DEVICE_UUID]-device-uuid" class="form-control" placeholder="Device UUID" name="deviceuuid" type="deviceuuid" value="[DEVICE_UUID]">
+											<input id="[DEVICE_UUID]-modal-node-uuid" class="form-control" placeholder="Device UUID" name="deviceuuid" type="deviceuuid" value="[DEVICE_UUID]">
 										</div>
 									</fieldset>
+								</fieldset>
+							</form>
+							<form role="form">
+								<fieldset>
+									<div id="[DEVICE_UUID]-modal-node-sensors"></div>
+									<div class="form-group">
+										<button type="button" class="btn btn-primary pull-right" onClick="">Close</button>
+									</div>
 								</fieldset>
 							</form>
 						</div>

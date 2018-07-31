@@ -42,31 +42,6 @@ function SqliteDB(dbFile) {
           "`user_id`             INTEGER NOT NULL," +
           "`type`                INTEGER NOT NULL," +
           "`uuid`                VARCHAR(64) NOT NULL," +
-          "`os_type`             VARCHAR(64) NOT NULL," +
-          "`os_version`          VARCHAR(64) NOT NULL," +
-          "`brand_name`          VARCHAR(64) NOT NULL," +
-          "`name`                VARCHAR(64) NOT NULL," +
-          "`description`         VARCHAR(64) NOT NULL," +
-          "`last_update_ts`      INTEGER NOT NULL," +
-          "`enabled`             TINYINT NOT NULL);");
-
-    sql.run("CREATE TABLE IF NOT EXISTS `tbl_camera_sensors` (" +
-          "`id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
-          "`type`                INTEGER NOT NULL," +
-          "`device_id`           INTEGER NOT NULL," +
-          "`image_path`          VARCHAR(64) NOT NULL," +
-          "`image_record_path`   VARCHAR(64) NOT NULL," +
-          "`last_update_ts`      INTEGER NOT NULL," +
-          "`enabled`             TINYINT NOT NULL);");
-
-    sql.run("CREATE TABLE IF NOT EXISTS `tbl_basic_sensors` (" +
-          "`id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
-		      "`uuid`                VARCHAR(64) NOT NULL," +
-		      "`name`          		   VARCHAR(64) NOT NULL," +
-		      "`value`               INTEGER NOT NULL," +
-          "`type`                INTEGER NOT NULL," +
-		      "`user_id`             INTEGER NOT NULL," +
-          "`device_id`           INTEGER NOT NULL," +
           "`last_update_ts`      INTEGER NOT NULL," +
           "`enabled`             TINYINT NOT NULL);");
   });
@@ -216,11 +191,6 @@ SqliteDB.prototype.DeleteUsers = function(callback) {
           "`user_id`             INTEGER NOT NULL," +
           "`type`                INTEGER NOT NULL," +
           "`uuid`                VARCHAR(64) NOT NULL," +
-          "`os_type`             VARCHAR(64) NOT NULL," +
-          "`os_version`          VARCHAR(64) NOT NULL," +
-          "`brand_name`          VARCHAR(64) NOT NULL," +
-          "`name`                VARCHAR(64) NOT NULL," +
-          "`description`         VARCHAR(64) NOT NULL," +
           "`last_update_ts`      INTEGER NOT NULL," +
           "`enabled`             TINYINT NOT NULL);");
  */
@@ -229,7 +199,7 @@ SqliteDB.prototype.SelectDevices = function(callback) {
   var sql = this.db;
   // console.log ("DATABASE SelectDevices");
   sql.serialize(function() {
-    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices`;";
+    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`last_update_ts`,`enabled` FROM `tbl_devices`;";
     sql.all(query, function(err, rows) {
       callback(null, rows);
     });
@@ -240,7 +210,7 @@ SqliteDB.prototype.SelectDeviceByUserKey = function(device, callback) {
   var sql = this.db;
   // console.log ("DATABASE SelectDeviceByUserKey");
   sql.serialize(function() {
-    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `user_id`='" + device.userId + "';";
+    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `user_id`='" + device.userId + "';";
     sql.all(query, function(err, rows) {
       if (rows == null) {
       } else {
@@ -249,13 +219,8 @@ SqliteDB.prototype.SelectDeviceByUserKey = function(device, callback) {
           device.userId = rows[0].user_id;
           device.type = rows[0].type;
           device.uuid = rows[0].uuid;
-          device.osType = rows[0].os_type;
-          device.osVersion = rows[0].os_version;
           device.lastUpdateTs = rows[0].last_update_ts;
           device.enabled = rows[0].enabled;
-          device.brandName = rows[0].brand_name;
-          device.name = rows[0].name;
-          device.description = rows[0].description;
           callback(null, device);
           return;
         }
@@ -270,7 +235,7 @@ SqliteDB.prototype.SelectDeviceByDeviceUUID = function(device, callback) {
   var sql = this.db;
   // console.log ("DATABASE SelectDeviceByDeviceUUID");
   sql.serialize(function() {
-    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `uuid`='" + device.uuid + "';";
+    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `uuid`='" + device.uuid + "';";
     sql.all(query, function(err, rows) {
       if (rows == null) {
       } else {
@@ -279,13 +244,8 @@ SqliteDB.prototype.SelectDeviceByDeviceUUID = function(device, callback) {
           device.userId = rows[0].user_id;
           device.type = rows[0].type;
           device.uuid = rows[0].uuid;
-          device.osType = rows[0].os_type;
-          device.osVersion = rows[0].os_version;
           device.lastUpdateTs = rows[0].last_update_ts;
           device.enabled = rows[0].enabled;
-          device.brandName = rows[0].brand_name;
-          device.name = rows[0].name;
-          device.description = rows[0].description;
           callback(null, device);
           return;
         }
@@ -300,7 +260,7 @@ SqliteDB.prototype.SelectDevice = function(device, callback) {
   var sql = this.db;
   console.log ("DATABASE SelectDevice");
   sql.serialize(function() {
-    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `id`=" + device.id + ";";
+    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `id`=" + device.id + ";";
     sql.all(query, function(err, rows) {
       if (rows == null) {
       } else {
@@ -309,13 +269,8 @@ SqliteDB.prototype.SelectDevice = function(device, callback) {
           device.userId = rows[0].user_id;
           device.type = rows[0].type;
           device.uuid = rows[0].uuid;
-          device.osType = rows[0].os_type;
-          device.osVersion = rows[0].os_version;
           device.lastUpdateTs = rows[0].last_update_ts;
           device.enabled = rows[0].enabled;
-          device.brandName = rows[0].brand_name;
-          device.name = rows[0].name;
-          device.description = rows[0].description;
           callback(null, device);
           return;
         }
@@ -330,7 +285,7 @@ SqliteDB.prototype.CheckDeviceByUUID = function(device, callback) {
   var sql = this.db;
   // console.log ("DATABASE CheckDeviceByUUID");
   sql.serialize(function() {
-    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `uuid`='" + device.uuid + "';";
+    var query = "SELECT `id`,`user_id`,`type`,`uuid`,`last_update_ts`,`enabled` FROM `tbl_devices` WHERE `uuid`='" + device.uuid + "';";
     sql.all(query, function(err, rows) {
       if (rows == null) {
       } else {
@@ -349,8 +304,8 @@ SqliteDB.prototype.InsertDevice = function(device, callback) {
   var sql = this.db;
   // console.log ("DATABASE InsertDevice ");
   sql.serialize(function() {
-    var query = "INSERT INTO `tbl_devices` (`id`,`user_id`,`type`,`uuid`,`os_type`,`os_version`,`brand_name`,`name`,`description`,`last_update_ts`,`enabled`) " +
-        "VALUES (NULL," + device.userId + "," + device.type + ",'" + device.uuid + "','" + device.osType + "','" + device.osVersion + "','" + device.brandName + "','New Device','Description'," + device.lastUpdateTs + ",1);";
+    var query = "INSERT INTO `tbl_devices` (`id`,`user_id`,`type`,`uuid`,`last_update_ts`,`enabled`) " +
+        "VALUES (NULL," + device.userId + "," + device.type + ",'" + device.uuid + "'," + device.lastUpdateTs + ",1);";
     sql.run(query);
     callback({info:"Device Inserted"});
   });
@@ -360,7 +315,7 @@ SqliteDB.prototype.UpdateDeviceInfo = function(device, callback) {
   var sql = this.db;
   // console.log ("DATABASE UpdateDevice");
   sql.serialize(function() {
-    var query = "UPDATE `tbl_devices` SET `name`='" + device.name + "', `description`='" + device.description + "', `enabled`=" + device.enabled + " WHERE `uuid`='" + device.uuid + "';";
+    var query = "UPDATE `tbl_devices` SET `name`='" + device.name + "', `enabled`=" + device.enabled + " WHERE `uuid`='" + device.uuid + "';";
     sql.run(query);
     callback({error:"OK"});
   });
@@ -384,321 +339,6 @@ SqliteDB.prototype.DeleteDevices = function(callback) {
     sql.run(query);
     callback({error:"OK"});
   });
-}
-
-/*
- * --------------------------------------------------------------------------------------------------
- * sql.run("CREATE TABLE IF NOT EXISTS `tbl_camera_sensors` (" +
-          "`id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
-          "`type`                INTEGER NOT NULL," +
-          "`device_id`           INTEGER NOT NULL," +
-          "`image_path`          VARCHAR(64) NOT NULL," +
-          "`image_record_path`   VARCHAR(64) NOT NULL," +
-          "`last_update_ts`      INTEGER NOT NULL," +
-          "`enabled`             TINYINT NOT NULL);");
- */
-
-SqliteDB.prototype.SelectCameraSensor = function(sensor, callback) {
-  var sql = this.db;
-  // console.log ("DATABASE SelectCameraSensor");
-  sql.serialize(function() {
-    var query = "SELECT `id`,`type`,`device_id`,`image_path`,`image_record_path`,`last_update_ts`,`enabled` FROM `tbl_camera_sensors` WHERE `device_id`=" + sensor.deviceId + " AND `type`=" + sensor.type + ";";
-    sql.all(query, function(err, rows) {
-      if (rows == null) {
-      } else {
-        if (rows.length > 0) {
-          sensor.id = rows[0].id;
-          sensor.type = rows[0].type;
-          sensor.deviceId = rows[0].device_id;
-          sensor.imagePath = rows[0].image_path;
-          sensor.imageRecordPath = rows[0].image_record_path;
-          sensor.lastUpdateTs = rows[0].last_update_ts;
-          sensor.enabled = rows[0].enabled;
-          callback(null, sensor);
-          return;
-        }
-      }
-
-      callback(null, null);
-    });
-  });
-}
-
-SqliteDB.prototype.SelectCameraSensors = function(deviceId, callback) {
-  var sql = this.db;
-  // console.log ("DATABASE SelectCameraSensors");
-  sql.serialize(function() {
-    var query = "SELECT `id`,`type`,`device_id`,`image_path`,`image_record_path`,`last_update_ts`,`enabled` FROM `tbl_camera_sensors` WHERE `device_id`=" + deviceId + ";";
-    sql.all(query, function(err, rows) {
-      if (rows == null) {
-      } else {
-        if (rows.length > 0) {
-          var sensors = [];
-
-          for (i = 0; i < rows.length; i++) {
-            var sensor = {
-              id: rows[i].id,
-              type: rows[i].type,
-              deviceId: rows[i].device_id,
-              imagePath: rows[i].image_path,
-              imageRecordPath: rows[i].image_record_path,
-              lastUpdateTs: rows[i].last_update_ts,
-              enabled: rows[i].enabled
-            };
-            sensors.push(sensor);
-          }
-          
-          callback(null, sensors);
-          return;
-        }
-      }
-
-      callback(null, null);
-    });
-  });
-}
-
-SqliteDB.prototype.SelectCameraSensorByType = function(deviceId, type, callback) {
-  var sql = this.db;
-  // console.log ("DATABASE SelectCameraSensorByType");
-  sql.serialize(function() {
-    var query = "SELECT `id`,`type`,`device_id`,`image_path`,`image_record_path`,`last_update_ts`,`enabled` FROM `tbl_camera_sensors` WHERE `device_id`=" + deviceId + " AND `type`=" + type + ";";
-    sql.all(query, function(err, rows) {
-      if (rows == null) {
-      } else {
-        if (rows.length > 0) {
-          var sensors = [];
-
-          for (i = 0; i < rows.length; i++) {
-            var sensor = {
-              id: rows[i].id,
-              type: rows[i].type,
-              deviceId: rows[i].device_id,
-              imagePath: rows[i].image_path,
-              imageRecordPath: rows[i].image_record_path,
-              lastUpdateTs: rows[i].last_update_ts,
-              enabled: rows[i].enabled
-            };
-            sensors.push(sensor);
-          }
-          
-          callback(null, sensors);
-          return;
-        }
-      }
-
-      callback(null, null);
-    });
-  });
-}
-
-SqliteDB.prototype.InsertCameraSensor = function(sensor, callback) {
-  var sql = this.db;
-  // console.log ("DATABASE InsertCameraSensor");
-  sql.serialize(function() {
-    var query = "INSERT INTO `tbl_camera_sensors` (`id`,`type`,`device_id`,`image_path`,`image_record_path`,`last_update_ts`,`enabled`) " +
-        "VALUES (NULL," + sensor.type + "," + sensor.deviceId + ",'" + sensor.imagePath + "','" + sensor.imageRecordPath + "'," + sensor.lastUpdateTs + ",1);";
-    sql.run(query);
-    callback({error:"OK"});
-  });
-}
-
-/*
-sql.run("CREATE TABLE IF NOT EXISTS `tbl_basic_sensors` (" +
-          "`id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
-		  "`uuid`                VARCHAR(64) NOT NULL," +
-		  "`name`          		 VARCHAR(64) NOT NULL," +
-		  "`value`				 INTEGER NOT NULL," +
-          "`type`                INTEGER NOT NULL," +
-		  "`user_id`             INTEGER NOT NULL," +
-          "`device_id`           INTEGER NOT NULL," +
-          "`last_update_ts`      INTEGER NOT NULL," +
-          "`enabled`             TINYINT NOT NULL);");
-*/
-
-SqliteDB.prototype.InsertBasicSensor = function(sensor, callback) {
-	var sql = this.db;
-	// console.log ("DATABASE InsertBasicSensor");
-
-	sql.serialize(function() {
-		var query = "INSERT INTO `tbl_basic_sensors` (`id`,`uuid`,`name`,`type`,`user_id`,`device_id`,`value`,`last_update_ts`,`enabled`) " +
-			"VALUES (NULL,'" + sensor.uuid + "','" + sensor.name + "'," + sensor.type + "," + sensor.userId + "," + sensor.deviceId + "," + sensor.value + "," + sensor.lastUpdateTs + ",1);";
-
-		try {
-			sql.run(query);
-			callback({error:"OK"});
-		} catch (error) {
-			console.log ("SQLITE ERROR");
-			callback({error:"ERROR"});
-		}
-	});
-}
-
-SqliteDB.prototype.UpdateBasicSensor = function(sensor, callback) {
-	var sql = this.db;
-	// console.log ("DATABASE UpdateBasicSensor");
-
-	sql.serialize(function() {
-    var query = "UPDATE `tbl_basic_sensors` SET `last_update_ts`=" + sensor.lastUpdateTs + ", `name`='" + sensor.name + "', `value`=" + sensor.value + ", `enabled`=" + sensor.enabled + " WHERE `uuid`='" + sensor.uuid + "';";
-    sql.run(query);
-    callback({error:"OK"});
-  });
-}
-
-SqliteDB.prototype.UpdateBasicSensorValue = function(uuid, value, callback) {
-	var sql = this.db;
-	console.log ("DATABASE UpdateBasicSensor");
-
-	sql.serialize(function() {
-		var query = "UPDATE `tbl_basic_sensors` SET `last_update_ts`=" + moment().unix() + ", `value`=" + value + " WHERE `uuid`='" + uuid + "';";
-		console.log(query);
-		
-		try {
-			sql.run(query);
-			callback({error:"OK"});
-		} catch (error) {
-			console.log(error.message);
-			callback({error:"ERROR"});
-		}
-  });
-}
-
-SqliteDB.prototype.SelectBasicSensorByUserId = function(userId, callback) {
-	var sql = this.db;
-	console.log ("DATABASE SelectBasicSensorByUserId");
-
-	sql.serialize(function() {
-		var query = "SELECT `tbl_basic_sensors`.*, `tbl_devices`.uuid as device_uuid FROM `tbl_basic_sensors` INNER JOIN `tbl_devices` ON `tbl_basic_sensors`.device_id = `tbl_devices`.id WHERE `tbl_basic_sensors`.user_id=" + userId + ";";
-		sql.all(query, function(err, rows) {
-			if (rows == null) {
-			} else {
-				if (rows.length > 0) {
-					var sensors = [];
-
-					for (i = 0; i < rows.length; i++) {
-						var sensor = {
-							id: rows[i].id,
-							uuid: rows[i].uuid,
-							name: rows[i].name,
-							value: rows[i].value,
-							type: rows[i].type,
-							userId: rows[i].user_id,
-							deviceId: rows[i].device_id,
-							lastUpdateTs: rows[i].last_update_ts,
-							enabled: rows[i].enabled,
-							deviceUUID: rows[i].device_uuid,
-						};
-						sensors.push(sensor);
-					}
-				  
-					callback(null, sensors);
-					return;
-				}
-			}
-
-			callback(null, null);
-		});
-	});
-}
-
-SqliteDB.prototype.SelectBasicSensorByUUID = function(uuid, callback) {
-	var sql = this.db;
-	console.log ("DATABASE SelectBasicSensorByUUID");
-
-	sql.serialize(function() {
-		var query = "SELECT `tbl_basic_sensors`.*, `tbl_devices`.uuid as device_uuid FROM `tbl_basic_sensors` INNER JOIN `tbl_devices` ON `tbl_basic_sensors`.device_id = `tbl_devices`.id WHERE `tbl_basic_sensors`.uuid='" + uuid + "';";
-		// console.log (query);
-		
-		try {
-			sql.all(query, function(err, rows) {
-				if (rows == null) {
-				} else {
-					if (rows.length > 0) {
-						var sensor = {
-							id: rows[0].id,
-							uuid: rows[0].uuid,
-							name: rows[0].name,
-							value: rows[0].value,
-							type: rows[0].type,
-							userId: rows[0].user_id,
-							deviceId: rows[0].device_id,
-							lastUpdateTs: rows[0].last_update_ts,
-							enabled: rows[0].enabled,
-							deviceUUID: rows[0].device_uuid,
-						};
-						
-						callback(null, sensor);
-						return;
-					}
-				}
-
-				callback(null, null);
-			});		
-		} catch (error) {
-			console.log ("SQLITE ERROR");
-			callback({error:"ERROR"}, null);
-		}
-	});
-}
-
-SqliteDB.prototype.SelectBasicSensorByDeviceUUID = function(uuid, callback) {
-	var sql = this.db;
-	console.log ("DATABASE SelectBasicSensorByUUID");
-
-	sql.serialize(function() {
-		var query = "SELECT `tbl_basic_sensors`.*, `tbl_devices`.uuid as device_uuid  FROM `tbl_basic_sensors` INNER JOIN `tbl_devices` ON `tbl_basic_sensors`.device_id = `tbl_devices`.id WHERE `tbl_devices`.uuid='" + uuid + "';";
-		
-		try {
-			sql.all(query, function(err, rows) {
-				if (rows == null) {
-				} else {
-					if (rows.length > 0) {
-						var sensors = [];
-						
-						for (i = 0; i < rows.length; i++) {
-							var sensor = {
-								id: rows[i].id,
-								uuid: rows[i].uuid,
-								name: rows[i].name,
-								value: rows[i].value,
-								type: rows[i].type,
-								userId: rows[i].user_id,
-								deviceId: rows[i].device_id,
-								lastUpdateTs: rows[i].last_update_ts,
-								enabled: rows[i].enabled,
-								deviceUUID: rows[i].device_uuid,
-							};
-							sensors.push(sensor);
-						}
-						
-						callback(null, sensors);
-						return;
-					}
-				}
-
-				callback(null, null);
-			});		
-		} catch (error) {
-			console.log ("SQLITE ERROR");
-			callback({error:"ERROR"}, null);
-		}
-	});
-}
-
-SqliteDB.prototype.DeleteBasicSensorsByUserId = function(userId, callback) {
-	var sql = this.db;
-	console.log ("DATABASE DeleteBasicSensors");
-
-	sql.serialize(function() {
-		var query = "DELETE FROM `tbl_basic_sensors` WHERE `user_id`=" + userId + ";";
-		try {
-			sql.run(query);
-			callback({error:"OK"});
-		} catch (error) {
-			console.log ("SQLITE ERROR");
-			callback({error:"ERROR"}, null);
-		}
-	});
 }
 
 function SqliteFactory() {

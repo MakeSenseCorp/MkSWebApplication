@@ -5,6 +5,23 @@ function Storage() {
 	return this;
 }
 
+function DeviceSwitch (node, callback) {
+	self = this;
+	self.Node = node;
+	self.DeviceFileName = node.type + "-device";
+	
+	console.log(self.DeviceFileName);
+	MkSLoadModuleHtml(self.DeviceFileName + "/" + self.DeviceFileName, function(data) {
+		htmlData = data;
+		htmlData = htmlData.split("[DEVICE_UUID]").join(self.Node.uuid);
+			
+		self.HtmlData = htmlData;
+		MkSLoadModuleJavascript(self.DeviceFileName + "/" + self.DeviceFileName, function(data) {
+			callback(self.HtmlData);
+		});
+	});
+}
+
 function GetDevices() {
 	console.log(GetServerUrl() + 'select/devices/' + GetUserKey());
 	$.ajax({
@@ -22,11 +39,6 @@ function GetDevices() {
 					userId:1,
 					uuid:"ac6de837-8863-82a9-c789-b0aae7e9d93e",
 					type:2000,
-					brandName:"MakeSense-Arduino-Basic",
-					name:"New Device",
-					description:"Description",
-					osType:"Linux",
-					osVersion:"Unknown",
 					lastUpdateTs:1519228921,
 					enabled:1
 				}

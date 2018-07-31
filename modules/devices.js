@@ -14,13 +14,8 @@ module.exports = function(app, security, sql, connectivity, storage) {
 							userId: devices[i].user_id,
 							type: devices[i].type,
 							uuid: devices[i].uuid,
-							osType: devices[i].os_type,
-							osVersion: devices[i].os_version,
 							lastUpdateTs: devices[i].last_update_ts,
 							enabled: devices[i].enabled,
-							brandName: devices[i].brand_name,
-							name: devices[i].name,
-							description: devices[i].description
 						};
 						data.push(device);
 					}
@@ -158,9 +153,6 @@ module.exports = function(app, security, sql, connectivity, storage) {
 								userId: user.id,
 								type: jData.payload.type,
 								uuid: jData.payload.uuid,
-								osType: jData.payload.ostype,
-								osVersion: jData.payload.osversion,
-								brandName: jData.payload.brandname,
 								lastUpdateTs: moment().unix(),
 								enabled: 1
 							};
@@ -183,7 +175,7 @@ module.exports = function(app, security, sql, connectivity, storage) {
 		});
 	});
 	
-	app.get('/insert/device/:key/:type/:uuid/:ostype/:osversion/:brandname', function(req, res) {
+	app.get('/insert/device/:key/:type/:uuid', function(req, res) {
 		var reqDevice = {
 			uuid: req.params.uuid,
 			brandName: req.params.brandname
@@ -200,9 +192,6 @@ module.exports = function(app, security, sql, connectivity, storage) {
 								userId: user.id,
 								type: req.params.type,
 								uuid: req.params.uuid,
-								osType: req.params.ostype,
-								osVersion: req.params.osversion,
-								brandName: req.params.brandname,
 								lastUpdateTs: moment().unix(),
 								enabled: 1
 							};
@@ -218,11 +207,9 @@ module.exports = function(app, security, sql, connectivity, storage) {
 		});
 	});
 	
-	app.get('/update/device/:key/:uuid/:name/:description/:enabled', function(req, res) {
+	app.get('/update/device/:key/:uuid/:enabled', function(req, res) {
 		var reqDevice = {
 			uuid: req.params.uuid,
-			name: req.params.name,
-			description: req.params.description,
 			enabled: req.params.enabled
 		};
 		security.CheckUUID(req.params.key, function (valid) {

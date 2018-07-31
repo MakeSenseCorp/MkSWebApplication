@@ -83,6 +83,7 @@ function MkSRemoveDeviceListener(deviceUuid, fn) {
 	}
 }
 
+// Need to remove
 function MkSUpdateDeviceOnServer(obj, callback) {
 	$.ajax({
 	    url: obj.url + 'update/device/' + obj.key + "/" + obj.uuid + "/" + obj.name + "/" + obj.description + "/" + obj.enable,
@@ -92,6 +93,8 @@ function MkSUpdateDeviceOnServer(obj, callback) {
 	});
 }
 
+
+// Need to remove or change
 function MkSDeviceStatus(obj, callback) {
 	$.ajax({
 	    url: obj.url + 'get/device/node/status/' + obj.key + "/" + obj.uuid,
@@ -101,6 +104,7 @@ function MkSDeviceStatus(obj, callback) {
 	});
 }
 
+// Need to remove
 function MkSDeviceGetAllOnUserKey(obj, callback) {
 	$.ajax({
 	    url: obj.url + 'get/device/sensor/all/' + obj.key,
@@ -155,7 +159,7 @@ function MkSDeviceSendGetRequestWebface(obj, callback) {
 		additional: {
 		}
 	};
-	// console.log(request);
+	
 	$.ajax({
 	    url: obj.url + 'cmd/device/node/direct/' + obj.key + "/" + obj.uuid + "/" + JSON.stringify(request),
 	    type: "GET",
@@ -164,6 +168,7 @@ function MkSDeviceSendGetRequestWebface(obj, callback) {
 	});
 }
 
+// Need to remove
 function MkSUpdateSensorValue (obj, callback) {
 	$.ajax({
 	    url: obj.url + 'update/sensor/basic/value/' + obj.key + '/' + obj.deviceUuid + '/' + obj.sensorUuid + '/' + obj.value,
@@ -173,6 +178,7 @@ function MkSUpdateSensorValue (obj, callback) {
 	});
 }
 
+// Need to remove
 function MkSGetUserBasicSensorsByDevice(obj, callback) {
 	$.ajax({
 	    url: obj.url + 'select/sensor/basic/' + obj.key + "/" + obj.uuid,
@@ -182,6 +188,7 @@ function MkSGetUserBasicSensorsByDevice(obj, callback) {
 	});
 }
 
+// Need to remove
 function MkSGetUserBasicSensorsFromCacheByDevice(obj, callback) {
 	$.ajax({
 	    url: obj.url + 'get/sensor/basic/' + obj.key + "/" + obj.uuid,
