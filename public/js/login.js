@@ -3,6 +3,9 @@ $(document).ready(function(){
 	$("#login").click(function() {
 		var username = $('#username').val();
 		var password = $('#password').val();
+		/*
+		TODO - PLEASE USE COMMON FOR SERVER URL
+		*/
 		var url = "http://ec2-18-236-253-240.us-west-2.compute.amazonaws.com/login/" + username + "/" + password;
 
 		$.get(url, function(data, status) {

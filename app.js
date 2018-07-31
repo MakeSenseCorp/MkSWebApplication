@@ -14,10 +14,6 @@ var WebSocketServer = require('websocket').server;
 var http            = require('http');
 
 var logedInUsers = [];
-
-var KnownOS = ["Linux", "Windows", "Mac", "iOS", "Android", "NoOS"];
-var KnownBrandName = ["MakeSense-Virtual", "MakeSense"];
-
 var app = express();
 
 app.use(bodyParser.urlencoded({
@@ -111,54 +107,7 @@ function ObjectIoTBrowsers () {
 }
 var iotBrowsers = ObjectIoTBrowsers();
 
-var PacketsToSendList = [];
-function SendPacketsFunc () {
-	if (PacketsToSendList.length > 0) {
-		var messageTask = PacketsToSendList.pop();
-		var comm = connectivity.GetIoTClient(messageTask.uuid);
-		// comm.Socket.send(messageTask.data);
-
-		url = "http://ec2-18-236-253-240.us-west-2.compute.amazonaws.com/cmd/device/node/direct/" + messageTask.key + "/" + messageTask.uuid + "/" + messageTask.data;
-		http.get( url, function(response) {
-  			response.setEncoding("utf8");
-  			var body = "";
-  			response.on("data", function(data) {
-    			body += data;
-  			});
-  			response.on("end", function() {
-    			body = JSON.parse(body);
-    			console.log(body);
-  			});
-		});
-
-		console.log("Messages send to " + messageTask.uuid);
-		console.log("Messages left to send " + PacketsToSendList.length);
-	}
-} // var SendPacketsHandler = setInterval (SendPacketsFunc, 5000);
-
 var RegisterRequestList = [];
-function RegisterDevicesFunc () {
-	if (RegisterRequestList.length > 0) {
-		var task = RegisterRequestList.pop();
-		var iotPublisher = GetIoTClient(task.publisher);
-		if (iotPublisher !== undefined) {
-			// Check if device already registered.
-			for (var index in iotPublisher.Listeners) {
-				if (iotPublisher.Listeners[index] == task.subscriber) {
-					console.log("Registered subscriber " + task.subscriber + " to " + task.publisher);
-					return;
-				}
-			}
-			iotPublisher.Listeners.push(task.subscriber);
-			console.log("Registered subscriber " + task.subscriber + " to " + task.publisher);
-		} else {
-			console.log("ERROR: Could not register device to a UNDEFINED publisher");
-			RegisterRequestList.push(task);
-		}
-	}
-}
-// var RegisterDevicesHandler = setInterval (RegisterDevicesFunc, 5000);
-
 function Connectivity (iotClients, iotBrowsers, localDB) {
 	self = this;
 	
@@ -480,32 +429,6 @@ app.get('/get/wan/ip', function(req, res) {
 	res.end(ipAddress);
 });
 
-app.get('/test_sse', function(req, res) {
-	WebConnection = WebSSEClients[UserDevKey];
-	if (WebConnection != undefined) {
-		var data = "HELLO";
-		WebConnection.session.write("data: " + data);
-		WebConnection.session.write("\n\n");
-		console.log ((new Date()) + " #> Sending data to web client ...");
-	}
-
-	res.end("OK");
-});
-
-app.get('/test_json/:json', function(req, res) {
-	console.log ("METHOD /select/users " + req.params.json);
-	jsonData = JSON.parse(req.params.json);
-
-	console.log(jsonData.device);
-	console.log(jsonData.sensors);
-
-	for (i = 0; i < jsonData.sensors.length; i++) {
-		console.log(jsonData.sensors[i].id);
-	}
-
-	res.end(req.params.json);
-});
-
 app.get('/select/users/:key', function(req, res) {
 	console.log ("METHOD /select/users");
 	security.CheckAdmin(req.params.key, function(valid) {
@@ -696,19 +619,6 @@ app.get('/login/:name/:password', function(req, res) {
 	GetUserByNamePassword (req.params.name, req.params.password, function (user) {
 		if (user != null) {
 			logedInUsers.push(user);
-			res.json(user);
-		} else {
-			res.json({error:"user doesn't exist"});
-		}
-	});
-});
-
-/*
- * Same as Login but without saving user.
- */
-app.get('/fastlogin/:name/:password', function(req, res) {
-	GetUserByNamePassword (req.params.name, req.params.password, function (user) {
-		if (user != null) {
 			res.json(user);
 		} else {
 			res.json({error:"user doesn't exist"});
