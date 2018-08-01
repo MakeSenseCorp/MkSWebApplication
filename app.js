@@ -626,6 +626,19 @@ app.get('/login/:name/:password', function(req, res) {
 	});
 });
 
+/*
+ * Same as Login but without saving user.
+ */
+app.get('/fastlogin/:name/:password', function(req, res) {
+	GetUserByNamePassword (req.params.name, req.params.password, function (user) {
+		if (user != null) {
+			res.json(user);
+		} else {
+			res.json({error:"user doesn't exist"});
+		}
+	});
+});
+
 var server = app.listen(80, function(){
 	console.log('Server listening on port 8080');
 });
