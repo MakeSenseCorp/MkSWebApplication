@@ -28,11 +28,43 @@ function MkSLoadModuleJavascript (name, callback) {
     });
 }
 
+function MkSLoadApplicationHtml (id, callback) {
+	jQuery.ajax({
+        url: "apps/" + id + "-app/" + id + "-app.html",
+		type: "GET",
+        dataType: "html",
+        success: callback,
+        async: false 
+    });
+}
+
+function MkSLoadApplicationJavascript (id, callback) {
+	jQuery.ajax({
+        url: "apps/" + id + "-app/" + id + "-app.js",
+		type: "GET",
+        dataType: "script",
+        success: callback,
+        async: false 
+    });
+}
+
 function MkSOpenDeviceModal (uuid) {
 	$('#' + uuid + '-modal').modal('show');
 }
 
-function MkSRegisterToSensorListener(obj) {
+function MkSGetDevices(user_uuuid, callback) {
+	$.ajax({
+	    url: GetServerUrl() + 'select/devices/' + user_uuuid,
+	    type: "GET",
+	    dataType: "json",
+		async: true,
+	    success: function (data) {
+			callback(data);
+	    }
+	});
+}
+
+function MkSRegisterToSensorListener(obj, callback) {
 	if (!!window.EventSource) {
 		console.log ((new Date()) + " #> Registered to sensor stream [" + obj.key + "]");
 		objInstance.StreamSource = new EventSource(obj.url + "register_devices_update_event/" + obj.key);
@@ -40,11 +72,14 @@ function MkSRegisterToSensorListener(obj) {
 		objInstance.StreamSource.addEventListener('message', function(e) {
 			if (e.data != null) {
 				var jsonData = JSON.parse(e.data);
+				console.log("(MKSDK) # " + jsonData);
 				if (jsonData.device != null) {
+					console.log(objInstance.DeviceListeners[jsonData.device.uuid].length);
 					listeners = objInstance.DeviceListeners[jsonData.device.uuid];
 					for (var index in listeners) {
 						listener = listeners[index];
-						listeners.splice(listeners.indexOf(listener), 1);
+						// listeners.splice(listeners.indexOf(listener), 1);
+						// MkSRemoveDeviceListener(jsonData.device.uuid, listener);
 						listener(jsonData);
 					}
 				}
@@ -53,6 +88,7 @@ function MkSRegisterToSensorListener(obj) {
 
 		objInstance.StreamSource.addEventListener('open', function(e) {
 			console.log((new Date()) + " #> OPEN");
+			callback("Open");
 		}, false);
 
 		objInstance.StreamSource.addEventListener('error', function(e) {
@@ -74,12 +110,14 @@ function MkSAddDeviceListener(deviceUuid, fn) {
 	
 	listners.push(fn);
 	objInstance.DeviceListeners[deviceUuid] = listners;
+	console.log("MkSAddDeviceListener " + deviceUuid);
 }
 
 function MkSRemoveDeviceListener(deviceUuid, fn) {
 	var listeners = objInstance.DeviceListeners[deviceUuid];
 	if (listeners != undefined) {
 		listeners.splice(listeners.indexOf(fn), 1);
+		console.log("MkSRemoveDeviceListener " + deviceUuid);
 	}
 }
 

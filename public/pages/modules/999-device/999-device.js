@@ -10,9 +10,7 @@ var Context_999 = {
  */
 
 function GetNodeInformation_999(uuid) {
-	MkSRemoveDeviceListener(uuid, DataArrivedHandler_999);
-	MkSAddDeviceListener(uuid, DataArrivedHandler_999);
-	
+	console.log("Send INFO request " + uuid);
 	MkSDeviceSendGetRequestWebface({  	url: GetServerUrl(),
 										key: localStorage.getItem("key"),
 										uuid: uuid,
@@ -30,14 +28,11 @@ function GetNodeInformation_999(uuid) {
 		}
 	});
 	
-	Context_999.NodeStatusTimer = setInterval(GetNodeStatus_999, Context_999.NodeStatusInterval);
+	// Context_999.NodeStatusTimer = setInterval(GetNodeStatus_999, Context_999.NodeStatusInterval);
 }
 
 function GetNodeStatus_999() {
 	console.log("GetNodeStatus_999");
-	MkSRemoveDeviceListener(Context_999.uuid, DataArrivedHandler_999);
-	MkSAddDeviceListener(Context_999.uuid, DataArrivedHandler_999);
-	
 	MkSDeviceSendGetRequestWebface({  	url: GetServerUrl(),
 										key: localStorage.getItem("key"),
 										uuid: Context_999.uuid,
@@ -46,10 +41,60 @@ function GetNodeStatus_999() {
 									}, function (res) { });
 }
 
+function SensorHtmlBuildNew_999 (data) {
+	var html = "";
+	switch(data.sensor.type) {
+		case "Switch":
+			var switchTextValue = "";
+		
+			if (1 == data.sensor.value) {
+				switchTextValue = "On";
+			} else {
+				switchTextValue = "Off";
+			}
+			
+			html += "<tr id=\"" + data.sensor.uuid + "\">" +
+			"<td>" + (i + 1) + "</td>" +
+			"<td><img width=\"25px\" src=\"../images/basic_sensors/switch.png\"/></td>" +
+			"<td><label id=\"" + data.sensor.uuid + "-name\">" + data.sensor.name + "</label></td>" +
+			"<td align=\"center\"><div onclick=\"onClickSwitch_999('" + data.sensor.uuid + "','" + data.device.uuid + "','" + data.sensor.type + "');\"><span id=\"switch_value_" + data.sensor.uuid + "\">" + switchTextValue + "</span></div></td>" +
+			"</tr>";
+		break;
+		case "GenericSensor":
+			html += "<tr>" +
+			"<td>" + (i + 1) + "</td>" +
+			"<td><img width=\"25px\" src=\"../images/basic_sensors/humidity.png\"/></td>" +
+			"<td><label id=\"" + data.sensor.uuid + "-name\">" + data.sensor.name + "</label></td>" +
+			"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + data.sensor.uuid + "\">" + data.sensor.value + "</em></span></td>" +
+			"</tr>";
+		break;
+		default:
+		break;
+	}
+	
+	return html;
+}
+
+function SensorHtmlUpdate_999 (data) {
+	switch(data.sensor.type) {
+		case "Switch":
+			if (1 == data.sensor.value) {
+				document.getElementById('switch_value_' + data.sensor.uuid).innerHTML = "On";
+			} else {
+				document.getElementById('switch_value_' + data.sensor.uuid).innerHTML = "Off";
+			}
+		break;
+		case "GenericSensor":
+			document.getElementById(data.sensor.uuid).innerHTML = data.sensor.value;
+		break;
+		default:
+		break;
+	}
+}
+
 function DataArrivedHandler_999(data) {
-	console.log(data);
-	MkSAddDeviceListener(data.device.uuid, DataArrivedHandler_999);
 	if ("get_node_info" == data.device.command) {
+		console.log("get_node_info " + data.device.uuid);
 		var NodeIcon = data.device.type + "-device";
 		document.getElementById(data.device.uuid + "-node-name").innerHTML = data.payload.name;
 		document.getElementById(data.device.uuid + "-node-description").innerHTML = data.payload.description;
@@ -61,61 +106,15 @@ function DataArrivedHandler_999(data) {
 	} else if ("get_node_sensor_info" == data.device.command) {
 		console.log("get_node_sensor_info");
 		if (data.payload.sensors.length > 0) {
-			if (document.getElementById(data.device.uuid + '-modal-node-sensors').innerHTML == "") {
-				html = "<div class=\"table-responsive\">" +
-				"<table class=\"table table-hover\"><thead><tr><th>#</th><th>Type</th><th>Name</th><th><div style=\"text-align:center\">Value/Action</div></th><th><div style=\"text-align:center\">Favorite</div></th></tr></thead><tbody>";
-				for (i = 0; i < data.payload.sensors.length; i++) {
-					var sensor = data.payload.sensors[i];
-					switch(sensor.type) {
-						case "Switch":
-							html += "<tr>" +
-							"<td>" + (i + 1) + "</td>" +
-							"<td><img width=\"25px\" src=\"../images/basic_sensors/switch.png\"/></td>" +
-							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
-							"<td align=\"center\"><div onclick=\"onClickSwitch_999('" + sensor.uuid + "','" + data.device.uuid + "','" + sensor.type + "');\"><input id=\"" + sensor.uuid + "_toggle\" type=\"checkbox\" data-toggle=\"toggle\" data-onstyle=\"success\" value=\"" + sensor.value + "\" data-offstyle=\"danger\"></div></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">No</span></td>" +
-							"</tr>";
-						break;
-						case "GenericSensor":
-							html += "<tr>" +
-							"<td>" + (i + 1) + "</td>" +
-							"<td><img width=\"25px\" src=\"../images/basic_sensors/humidity.png\"/></td>" +
-							"<td><label id=\"" + sensor.uuid + "-name\">" + sensor.name + "</label></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:large\"><em id=\"" + sensor.uuid + "\">" + sensor.value + "</em></span></td>" +
-							"<td align=\"center\"><span class=\"text-muted\" style=\"font-size:small\">No</span></td>" +
-							"</tr>";
-						break;
-						default:
-						break;
-					}
-				} html += "</tbody></table></div>";
-				document.getElementById(data.device.uuid + '-modal-node-sensors').innerHTML = html;
-			}
-			
-			for (var index in data.payload.sensors) {
-				sensor = data.payload.sensors[index];
-				
-				if ("Switch" == sensor.type) {
-					if (document.getElementById(sensor.uuid + '_toggle') == undefined) {
-						MkSRemoveDeviceListener(data.device.uuid, MkSAddDeviceListener);
-						return;
-					}
-					
-					$("#" + sensor.uuid + '_toggle').bootstrapToggle('destroy');
-					if (1 == sensor.value) {
-						$("#" + sensor.uuid + '_toggle').bootstrapToggle('on');
-						document.getElementById(sensor.uuid + '_toggle').value = 1;
-					} else {
-						$("#" + sensor.uuid + '_toggle').bootstrapToggle('off');
-						document.getElementById(sensor.uuid + '_toggle').value = 0;
-					}
+			for (i = 0; i < data.payload.sensors.length; i++) {
+				var item = {
+					sensor: data.payload.sensors[i],
+					device: data.device
+				};
+				if (document.getElementById(item.sensor.uuid) == null) {
+					document.getElementById(data.device.uuid + '-modal-node-sensors').innerHTML += SensorHtmlBuildNew_999(item);
 				} else {
-					if (document.getElementById(sensor.uuid) == undefined) {
-						MkSRemoveDeviceListener(data.device.uuid, MkSAddDeviceListener);
-						return;
-					}
-				
-					document.getElementById(sensor.uuid).innerHTML = sensor.value;
+					SensorHtmlUpdate_999(item);
 				}
 			}
 		}
@@ -127,11 +126,11 @@ function DataArrivedHandler_999(data) {
 }
 
 function onClickSwitch_999 (uuid, node_uuid, type) {
-	var currentValue = document.getElementById(uuid + '_toggle').value;
-	if (currentValue == 1) {
-		document.getElementById(uuid + '_toggle').value = 0;
+	var SwitchValue = "0";
+	if (document.getElementById('switch_value_' + uuid).innerHTML == "On") {
+		SwitchValue = "0";
 	} else {
-		document.getElementById(uuid + '_toggle').value = 1;
+		SwitchValue = "1";
 	}
 	
 	MkSDeviceSendGetRequestWebface({  	url: GetServerUrl(),
@@ -142,7 +141,7 @@ function onClickSwitch_999 (uuid, node_uuid, type) {
 											sensors:[
 												{
 													uuid: uuid,
-													value: document.getElementById(uuid + '_toggle').value,
+													value: SwitchValue,
 													type: type
 												}
 											]
@@ -152,19 +151,22 @@ function onClickSwitch_999 (uuid, node_uuid, type) {
 
 function OpenInfoModalWindow_Device_999(uuid) {
 	var self = this;	
-	MkSOpenDeviceModal(uuid);
 	
 	MkSRemoveDeviceListener(uuid, DataArrivedHandler_999);
 	MkSAddDeviceListener(uuid, DataArrivedHandler_999);
+	
+	MkSOpenDeviceModal(uuid);
 	MkSDeviceSendGetRequestWebface({  	url: GetServerUrl(),
 										key: localStorage.getItem("key"),
-										uuid: Context_999.uuid,
+										uuid: uuid,
 										cmd: "get_node_sensor_info",
 										payload: { }
 									}, function (res) { });
 }
 
 function OnDeviceLoaded_999(uuid) {
-	Context_999.uuid = uuid;
+	MkSAddDeviceListener(uuid, DataArrivedHandler_999);
+	
+	// Context_999.uuid = uuid;
 	GetNodeInformation_999(uuid);
 }
