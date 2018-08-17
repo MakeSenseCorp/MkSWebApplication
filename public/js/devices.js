@@ -45,10 +45,12 @@ function GetDevices() {
 				*/
 				if (element.uuid != "") {
 					objStorage.Devices[element.uuid] = element;
-					DeviceSwitch(element, function (data) {
-						document.getElementById('device_context').innerHTML += data;
-						window['OnDeviceLoaded_' + element.type](element.uuid);
-					});
+					if (document.getElementById(element.uuid) === null) {
+						DeviceSwitch(element, function (data) {
+							document.getElementById('device_context').innerHTML += data;
+							window['OnDeviceLoaded_' + element.type](element.uuid);
+						});
+					}
 				}
 			});
 	    }

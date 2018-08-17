@@ -15,7 +15,7 @@
                         </div>
                         <p id="[DEVICE_UUID]-node-description"></p>
                         <div class="text-right">
-							<a href="#" onClick="OpenInfoModalWindow_Device_999('[DEVICE_UUID]');">Options<a/>
+							<a href="#" onClick="OpenInfoModalWindow_Device_20000('[DEVICE_UUID]');">Options<a/>
 						</div>
                     </div>
                 </li>
@@ -57,15 +57,41 @@
 							</form>
 							<form role="form">
 								<fieldset>
-									<div class="table-responsive">
-										<table class="table table-hover"><thead><tr><th>#</th><th>Type</th><th>Name</th><th><div style="text-align:center">Value/Action</div></th></tr></thead>
-											<tbody id="[DEVICE_UUID]-modal-node-sensors"">
-											</tbody>
-										</table>
-									</div>
+									<fieldset>
+										<div class="form-group">
+											<label>URL</label>
+											<div class="row">
+												<div class="col-xs-9">
+													<input id="[DEVICE_UUID]-modal-node-url" class="form-control" placeholder="Url to play" name="nodeurl" type="nodeurl" value="Url to play">
+												</div>
+												<div class="col-xs-3">
+													<button type="button" class="btn btn-primary pull-right" onClick="SetUrl_Node_20000('[DEVICE_UUID]');">Set URL</button>
+												</div>
+											</div>
+										</div>
+									</fieldset>
 									<div class="form-group">
-										<button type="button" class="btn btn-primary pull-right" onClick="">Close</button>
+										<div class="row">
+											<div class="col-xs-1"></div>
+											<div align="center" class="col-xs-2">
+												<p class="fa fa-play" onClick="SetCommand_Node_20000('[DEVICE_UUID]','CMD_PLAY');"></p>
+											</div>
+											<div align="center" class="col-xs-2">
+												<p class="fa fa-pause" onClick="SetCommand_Node_20000('[DEVICE_UUID]','CMD_PAUSE');"></p>
+											</div>
+											<div align="center" class="col-xs-2">
+												<p class="fa fa-stop" onClick="SetCommand_Node_20000('[DEVICE_UUID]','CMD_STOP');"></p>
+											</div>
+											<div align="center" class="col-xs-2">
+												<p class="fa fa-volume-up" onClick="SetCommand_Node_20000('[DEVICE_UUID]','CMD_VOL_UP');"></p>
+											</div>
+											<div align="center" class="col-xs-2">
+												<p class="fa fa-volume-down" onClick="SetCommand_Node_20000('[DEVICE_UUID]','CMD_VOL_DOWN');"></p>
+											</div>
+											<div class="col-xs-1"></div>
+										</div>
 									</div>
+									
 								</fieldset>
 							</form>
 						</div>
