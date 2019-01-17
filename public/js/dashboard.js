@@ -38,7 +38,9 @@ $(document).ready(function() {
 		key: localStorage.getItem("key"),
 		url: GetServerUrl(),
 	};
-	MkSRegisterToSensorListener(info);
+	MkSRegisterToSensorListener(info, function(msg) {
+		console.log(msg);
+	});
 	// On load we need to get all user devices
 	GetDevices();
 });
