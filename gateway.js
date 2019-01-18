@@ -3,17 +3,23 @@ var express     	= require('express');
 var bodyParser  	= require('body-parser')
 var WebSocketServer = require('websocket').server;
 var http            = require('http');
+var sync 			= require('synchronize');
+
+var fiber = sync.fiber;
+var await = sync.await;
+var defer = sync.defer;
 
 function MkSGateway (gatewayInfo) {
 	var self = this;
 	// Static variables section
-	this.ModuleName 		= "[Gateway]#"
+	this.ModuleName 		= "[Gateway]#";
 	this.WebsocketPort 		= gatewayInfo.WsPort;
 	this.RestAPIPort 		= gatewayInfo.RestAPIPort;
 	this.WSClients 			= [];
 	this.Server 			= null;
 	this.WS 				= null;
 	this.RestApi 			= express();
+	this.Database 			= null;
 	
 	this.RestApi.use(bodyParser.json());
 	this.RestApi.use(bodyParser.urlencoded({ extended: true }));
@@ -22,6 +28,10 @@ function MkSGateway (gatewayInfo) {
 		console.log(self.ModuleName, "RESTApi running on port", self.RestApiServer.address().port);
 	});
 	this.InitRouter(this.RestApi);
+}
+
+MkSGateway.prototype.SetDatabaseInstance = function (db) {
+	this.Database = db;
 }
 
 MkSGateway.prototype.InitRouter = function (server) {
@@ -46,7 +56,9 @@ MkSGateway.prototype.GetConnectionsNodeList = function () {
 	console.log(this.ModuleName, "GetConnectionsNodeList");
 }
 
-MkSGateway.prototype.Start = function () {	
+MkSGateway.prototype.Start = function () {
+	var self = this;
+	
 	// Create listener server
 	this.Server = http.createServer(function(request, response) {
 		
@@ -67,18 +79,41 @@ MkSGateway.prototype.Start = function () {
 		// Accept new connection request
 		var connection = request.accept(null, request.origin);
 		
-		// Each Node must provide UUID on connection request.
+		// Node must provide UUID on connection request.
 		if (request.httpRequest.headers.uuid == undefined || request.httpRequest.headers.uuid == "") {
-			console.log(this.ModuleName, "ERROR: Device without UUID trying to connect WebSocket ...");
+			console.log(self.ModuleName, "ERROR: Device without UUID trying to connect WebSocket ...");
 			connection.send("Missing UUID");
 			return;
 		}
 		
+		// Node must provide a key.
+		if (request.httpRequest.headers.key == undefined || request.httpRequest.headers.key == "") {
+			console.log(self.ModuleName, "ERROR: Unrecognized user ... Key not provided.");
+			connection.send("Missing KEY");
+			return;
+		}
+		
 		// TODO
-		//  1. Check if device registered in database.
-		// 	2. Check for user key.
-
-		console.log(this.ModuleName, "Registering device: " + request.httpRequest.headers.uuid)
+		//  1. Check if uuid in database.
+		// 	2. Check user key in database.
+		
+		console.log(self.ModuleName, "Registering device: " + request.httpRequest.headers.uuid)
+		fiber(function() {
+			var objUuid = await( self.Database.IsUuidExist(request.httpRequest.headers.uuid, defer()) );
+			var objUser = await( self.Database.IsUserKeyExist(request.httpRequest.headers.key, defer()) );
+			
+			var wsHandle = self.WSClients.push(connection) - 1;
+			connection.on('message', function(message) {
+				if (message.type === 'utf8') {
+					connection.LastMessageData = message.utf8Data;
+					jsonData = JSON.parse(message.utf8Data);
+				}
+			});
+			connection.on('close', function(connection) {
+				console.log (self.ModuleName, (new Date()), "Session closed ...", request.httpRequest.headers.uuid);
+				self.WSClients.splice(wsHandle, 1);
+			});
+		});
 	});
 }
 
