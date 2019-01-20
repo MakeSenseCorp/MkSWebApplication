@@ -97,23 +97,37 @@ MkSGateway.prototype.Start = function () {
 		//  1. Check if uuid in database.
 		// 	2. Check user key in database.
 		
-		console.log(self.ModuleName, "Registering device: " + request.httpRequest.headers.uuid)
-		fiber(function() {
+		self.Database.IsUuidExist(request.httpRequest.headers.uuid, function (status, data) {
+			if (status) {
+				self.Database.IsUserKeyExist(request.httpRequest.headers.key, function (status, data) {
+					if (status) {
+						console.log(self.ModuleName, (new Date()), "Register node: ", request.httpRequest.headers.uuid);
+						var wsHandle = self.WSClients.push(connection) - 1;
+						connection.on('message', function(message) {
+							if (message.type === 'utf8') {
+								connection.LastMessageData = message.utf8Data;
+								jsonData = JSON.parse(message.utf8Data);
+							}
+						});
+						connection.on('close', function(connection) {
+							console.log (self.ModuleName, (new Date()), "Unregister node:", request.httpRequest.headers.uuid);
+							self.WSClients.splice(wsHandle, 1);
+						});
+					} else {
+						return;
+					}
+				});
+			} else {
+				return;
+			}
+		});
+
+		/*fiber(function() {
 			var objUuid = await( self.Database.IsUuidExist(request.httpRequest.headers.uuid, defer()) );
 			var objUser = await( self.Database.IsUserKeyExist(request.httpRequest.headers.key, defer()) );
 			
-			var wsHandle = self.WSClients.push(connection) - 1;
-			connection.on('message', function(message) {
-				if (message.type === 'utf8') {
-					connection.LastMessageData = message.utf8Data;
-					jsonData = JSON.parse(message.utf8Data);
-				}
-			});
-			connection.on('close', function(connection) {
-				console.log (self.ModuleName, (new Date()), "Session closed ...", request.httpRequest.headers.uuid);
-				self.WSClients.splice(wsHandle, 1);
-			});
-		});
+			
+		});*/
 	});
 }
 
