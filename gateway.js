@@ -3,11 +3,32 @@ var express     	= require('express');
 var bodyParser  	= require('body-parser')
 var WebSocketServer = require('websocket').server;
 var http            = require('http');
-var sync 			= require('synchronize');
 
-var fiber = sync.fiber;
-var await = sync.await;
-var defer = sync.defer;
+function Connection (uuid, sock) {
+	self = this;
+	
+	this.Socket 		= sock;
+	this.UUID 			= uuid;
+	this.Subscribers 	= [];
+
+	this.AddSubscriber = function (uuid) {
+		this.Subscribers.push(uuid);
+	}
+
+	this.RemoveSubscriber = function (uuid) {
+		for (var index in this.Subscribers) {
+			if (this.Subscribers[index] == uuid) {
+				this.Subscribers.splice(index, 1);
+			}
+		}
+	}
+
+	this.CleanSubscribers = function () {
+		this.Subscribers = [];
+	}
+
+	return this;
+}
 
 function MkSGateway (gatewayInfo) {
 	var self = this;
@@ -20,6 +41,7 @@ function MkSGateway (gatewayInfo) {
 	this.WS 				= null;
 	this.RestApi 			= express();
 	this.Database 			= null;
+	this.NodeList			= {};
 	
 	this.RestApi.use(bodyParser.json());
 	this.RestApi.use(bodyParser.urlencoded({ extended: true }));
@@ -44,7 +66,12 @@ MkSGateway.prototype.InitRouter = function (server) {
 	
 	server.get('/api/get/node/connections', function(req, res) {
 		console.log(self.ModuleName, "/api/get/node/connections");
-		res.json({error:"none"});
+		var connections = [];
+		for (var key in self.NodeList) {
+			var item = self.NodeList[key];
+			connections.push({uuid:item.UUID});
+		}
+		res.json({error:"none", data:connections});
 	});
 }
 
@@ -103,6 +130,8 @@ MkSGateway.prototype.Start = function () {
 					if (status) {
 						console.log(self.ModuleName, (new Date()), "Register node: ", request.httpRequest.headers.uuid);
 						var wsHandle = self.WSClients.push(connection) - 1;
+						// Storing node connection into map.
+						self.NodeList[request.httpRequest.headers.uuid] = new Connection(request.httpRequest.headers.uuid, connection);
 						connection.on('message', function(message) {
 							if (message.type === 'utf8') {
 								connection.LastMessageData = message.utf8Data;
@@ -111,7 +140,10 @@ MkSGateway.prototype.Start = function () {
 						});
 						connection.on('close', function(connection) {
 							console.log (self.ModuleName, (new Date()), "Unregister node:", request.httpRequest.headers.uuid);
-							self.WSClients.splice(wsHandle, 1);
+							// Removing connection from the list.
+							self.NodeList[request.httpRequest.headers.uuid].CleanSubscribers();
+							delete self.NodeList[request.httpRequest.headers.uuid];
+							self.WSClients.splice(wsHandle, 1); // Consider to remove this list, we have a connections map.
 						});
 					} else {
 						return;
@@ -121,13 +153,6 @@ MkSGateway.prototype.Start = function () {
 				return;
 			}
 		});
-
-		/*fiber(function() {
-			var objUuid = await( self.Database.IsUuidExist(request.httpRequest.headers.uuid, defer()) );
-			var objUser = await( self.Database.IsUserKeyExist(request.httpRequest.headers.key, defer()) );
-			
-			
-		});*/
 	});
 }
 
@@ -136,3 +161,4 @@ function GatewayFactory () {
 }
 
 module.exports = GatewayFactory;
+
