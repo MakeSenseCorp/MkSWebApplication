@@ -1,10 +1,4 @@
-var SMART_PHONE 		= 2;
-var ARDUINO_BASIC 		= 1000;
-
-var OS_ANDROID 			= "android";
-var SAMSUNG_GALAXY_S3 	= "SamsungGalaxyS3";
-
-var MakeSenseServerUrl 	= "http://ec2-18-236-253-240.us-west-2.compute.amazonaws.com/";
+var MakeSenseServerUrl 	= "http://ec2-18-236-253-240.us-west-2.compute.amazonaws.com:8080/";
 var UserDEVKey 			= localStorage.getItem("key");
 
 function LogoutHandler() {

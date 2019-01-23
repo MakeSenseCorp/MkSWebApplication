@@ -54,11 +54,11 @@ MkSDatabase.prototype.IsUuidExist = function (uuid, callback) {
 			if (rows.length > 0) {
 				if (rows[0].status == 'OK') {
 					callback (true, {
-						"status":"OK", 
-						"data":{
-							"user_id": rows[0].user_id,
-							"is_valid": rows[0].is_valid,
-							"last_used_timestamp": rows[0].last_used_timestamp
+						status:"OK", 
+						data:{
+							user_id: rows[0].user_id,
+							is_valid: rows[0].is_valid,
+							last_used_timestamp: rows[0].last_used_timestamp
 						}});
 					return;
 				}
@@ -116,10 +116,37 @@ MkSDatabase.prototype.IsUserKeyExist = function (key, callback) {
 			if (rows.length > 0) {
 				if (rows[0].status == 'OK') {
 					callback (true, {
-						"status":"OK", 
-						"data":{
-							"last_login_ts": rows[0].last_login_ts,
-							"enabled": rows[0].enabled
+						status:"OK", 
+						data:{
+							last_login_ts: rows[0].last_login_ts,
+							enabled: rows[0].enabled
+						}});
+					return;
+				}
+			}
+			callback (false, null);
+		});
+	});
+}
+
+MkSDatabase.prototype.LoginCheck = function (user, pwd, callback) {
+	var self 	= this;
+	var sql 	= this.UserDB;
+	
+	sql.serialize(function() {
+		var query = "SELECT 'OK' as status, `id`, `key`, `last_login_ts`, `enabled` " +
+					"FROM  `tbl_users` " +
+					"WHERE `user_name` = '" + user + "' AND `password` = '" + pwd + "';";
+
+		sql.all(query, function(err, rows) {
+			if (rows.length > 0) {
+				if (rows[0].status == 'OK') {
+					callback (true, {
+						data:{
+							last_login_ts: rows[0].last_login_ts,
+							enabled: rows[0].enabled,
+							key: rows[0].key,
+							id: rows[0].id
 						}});
 					return;
 				}

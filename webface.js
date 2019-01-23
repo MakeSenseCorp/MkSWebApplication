@@ -11,6 +11,10 @@ function MkSWebface (webfaceInfo) {
 	this.RestAPIPort 		= webfaceInfo.RestAPIPort;
 	this.RestApi 			= express();
 	this.Database 			= null;
+	this.UserCacheDB		= []; // Valid users cache database
+	
+	this.RestApi.use(bodyParser.json());
+	this.RestApi.use(bodyParser.urlencoded({ extended: true }));
 	
 	this.RestApi.use(express.static(path.join(__dirname, 'public')));
 	this.RestApiServer = this.RestApi.listen(this.RestAPIPort, function () {
@@ -23,12 +27,47 @@ MkSWebface.prototype.SetDatabaseInstance = function (db) {
 	this.Database = db;
 }
 
+MkSWebface.prototype.IsUserChacheExist = function (key) {
+	return false;
+}
+
 MkSWebface.prototype.InitRouter = function (server) {
 	var self = this;
 	
-	server.get('/api/get/nodes/:key', function(req, res) {
+	server.post('/api/get/nodes/', function(req, res) {
 		console.log(self.ModuleName, "/api/get/nodes");
+		if (req.body.data != undefined) {
+			var key = req.body.data.key;
+		}
 		res.json({error:"none"});
+	});
+	
+	server.get('/api/get/cache/users', function(req, res) {
+		console.log(self.ModuleName, "/api/get/cache/users");
+		res.json({error:"None", users:self.UserCacheDB});
+	});
+	
+	server.post('/api/login/', function(req, res) {
+		console.log(self.ModuleName, "/api/login");
+		
+		if (req.body.data != undefined) {
+			var user = req.body.data.user;
+			var pwd  = req.body.data.pwd;
+			
+			console.log(self.ModuleName, "login", user, pwd);
+			self.Database.LoginCheck(user, pwd, function (status, data) {
+				if (status) {
+					// TODO - update timestamp
+					if (!self.IsUserChacheExist(data.key)) {
+						self.UserCacheDB.push(data);
+					}
+					
+					res.json({error:"None", data:data.data});
+				} else {
+					res.json({error:"Not valid"});
+				}
+			});
+		}
 	});
 }
 
