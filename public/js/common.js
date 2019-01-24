@@ -1,4 +1,5 @@
 var MakeSenseServerUrl 	= "http://ec2-18-236-253-240.us-west-2.compute.amazonaws.com:8080/";
+var MakeSenseDomain 	= "ec2-18-236-253-240.us-west-2.compute.amazonaws.com";
 var UserDEVKey 			= localStorage.getItem("key");
 
 function LogoutHandler() {

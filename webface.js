@@ -27,7 +27,13 @@ MkSWebface.prototype.SetDatabaseInstance = function (db) {
 	this.Database = db;
 }
 
-MkSWebface.prototype.IsUserChacheExist = function (key) {
+MkSWebface.prototype.IsUserCacheExist = function (key) {
+	for (var idx = 0; idx < this.UserCacheDB.length; idx++) {
+		var item = this.UserCacheDB[idx];
+		if (key == item.key) {
+			return true;
+		}
+	}
 	return false;
 }
 
@@ -55,14 +61,41 @@ MkSWebface.prototype.InitRouter = function (server) {
 			var pwd  = req.body.data.pwd;
 			
 			console.log(self.ModuleName, "login", user, pwd);
-			self.Database.LoginCheck(user, pwd, function (status, data) {
+			self.Database.LoginCheck(user, pwd, function (status, response) {
 				if (status) {
-					// TODO - update timestamp
-					if (!self.IsUserChacheExist(data.key)) {
-						self.UserCacheDB.push(data);
+					if (!self.IsUserCacheExist(response.data.key)) {
+						self.UserCacheDB.push(response);
 					}
 					
-					res.json({error:"None", data:data.data});
+					res.json({error:"None", data:response.data});
+					
+					self.Database.UpdateLastLoginTimestamp(response.data.id, function (status, response) {
+					});
+				} else {
+					res.json({error:"Not valid"});
+				}
+			});
+		}
+	});
+	
+	server.post('/api/signup/', function(req, res) {
+		console.log(self.ModuleName, "/api/signup");
+		
+		if (req.body.data != undefined) {
+			var user = req.body.data.user;
+			var pwd  = req.body.data.pwd;
+			
+			console.log(self.ModuleName, "login", user, pwd);
+			self.Database.LoginCheck(user, pwd, function (status, response) {
+				if (status) {
+					if (!self.IsUserCacheExist(response.data.key)) {
+						self.UserCacheDB.push(response);
+					}
+					
+					res.json({error:"None", data:response.data});
+					
+					self.Database.UpdateLastLoginTimestamp(response.data.id, function (status, response) {
+					});
 				} else {
 					res.json({error:"Not valid"});
 				}

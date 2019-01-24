@@ -59,7 +59,32 @@ MkSDatabase.prototype.IsUuidExist = function (uuid, callback) {
 							user_id: rows[0].user_id,
 							is_valid: rows[0].is_valid,
 							last_used_timestamp: rows[0].last_used_timestamp
-						}});
+						}
+					});
+					return;
+				}
+			}
+			callback (false, null);
+		});
+	});
+}
+
+MkSDatabase.prototype.GetNodesByUserId = function (user_id, callback) {
+	var self 	= this;
+	var sql 	= this.UuidDB;
+	
+	sql.serialize(function() {
+		var query = "SELECT * " +
+					"FROM  `tbl_uuids` " +
+					"WHERE `user_id` = " + user_id + ";";
+
+		sql.all(query, function(err, rows) {
+			if (rows.length > 0) {
+				if (rows[0].status == 'OK') {
+					callback (true, {
+						status:"OK", 
+						data:rows
+					});
 					return;
 				}
 			}
@@ -93,6 +118,7 @@ MkSDatabase.prototype.InitUserDatabase = function () {
 				"`key`             VARCHAR(128) NOT NULL," +
 				"`user_name`       VARCHAR(64) NOT NULL," +
 				"`password`        VARCHAR(64) NOT NULL," +
+				"`email`		   VARCHAR(128) NOT NULL," +
 				"`ts`              INTEGER NOT NULL," +
 				"`last_login_ts`   INTEGER NOT NULL," +
 				"`enabled`         TINYINT NOT NULL);");
@@ -120,7 +146,8 @@ MkSDatabase.prototype.IsUserKeyExist = function (key, callback) {
 						data:{
 							last_login_ts: rows[0].last_login_ts,
 							enabled: rows[0].enabled
-						}});
+						}
+					});
 					return;
 				}
 			}
@@ -147,12 +174,83 @@ MkSDatabase.prototype.LoginCheck = function (user, pwd, callback) {
 							enabled: rows[0].enabled,
 							key: rows[0].key,
 							id: rows[0].id
-						}});
+						}
+					});
 					return;
 				}
 			}
 			callback (false, null);
 		});
+	});
+}
+
+MkSDatabase.prototype.GetUserInfoById = function (user_id, callback) {
+	var self 	= this;
+	var sql 	= this.UserDB;
+	
+	sql.serialize(function() {
+		var query = "SELECT * " +
+					"FROM  `tbl_users` " +
+					"WHERE `id` = " + user_id + ";";
+
+		sql.all(query, function(err, rows) {
+			if (rows.length > 0) {
+				if (rows[0].status == 'OK') {
+					callback (true, {
+						data: rows[0]
+					});
+					return;
+				}
+			}
+			callback (false, null);
+		});
+	});
+}
+
+MkSDatabase.prototype.GetUserInfoByKey = function (user_key, callback) {
+	var self 	= this;
+	var sql 	= this.UserDB;
+	
+	sql.serialize(function() {
+		var query = "SELECT * " +
+					"FROM  `tbl_users` " +
+					"WHERE `key` = " + user_key + ";";
+
+		sql.all(query, function(err, rows) {
+			if (rows.length > 0) {
+				if (rows[0].status == 'OK') {
+					callback (true, {
+						data: rows[0]
+					});
+					return;
+				}
+			}
+			callback (false, null);
+		});
+	});
+}
+
+MkSDatabase.prototype.UpdateLastLoginTimestamp = function (user_id, callback) {
+	var self 	= this;
+	var sql 	= this.UserDB;
+	
+	sql.serialize(function() {
+		var query = "UPDATE `tbl_users` SET `last_login_ts`=" + moment().unix() + " WHERE `id`=" + user_id + ";";
+		sql.run(query);
+		callback (true, null);
+	});
+}
+
+MkSDatabase.prototype.SignUpUser = function (user, callback) {
+	var self 	= this;
+	var sql 	= this.UserDB;
+	
+	sql.serialize(function() {
+		var query = "UPDATE `tbl_users` SET `last_login_ts`=" + moment().unix() + " WHERE `id`=" + user_id + ";";
+		var query = "INSERT INTO `tbl_users` (`id`, `key`, `user_name`, `password`, `email`, `ts`, `last_login_ts`, `enabled`) " +
+        "VALUES (NULL,'" + user.key + "','" + user.userName + "','" + user.password + "'," + user.ts + "," + user.lastLoginTs + ", 1);";
+		sql.run(query);
+		callback (true, null);
 	});
 }
 
@@ -187,6 +285,37 @@ MkSDatabase.prototype.InitRouter = function (server) {
 		self.GetAllUsers(function (data) {
 			res.json({error:"none", "data":data});
 		});
+	});
+	
+	server.post('/api/get/user/info', function(req, res) {
+		console.log(self.ModuleName, "/api/get/user/info");
+		
+		if (req.body.data != undefined) {
+			var key = req.body.data.key;
+			var id  = req.body.data.id;
+			
+			if (id != "" && id != undefined) {
+				self.Database.GetUserInfoById(id, function (status, response) {
+					if (status) {					
+						res.json({error:"None", data:response.data});
+					} else {
+						res.json({error:"Not valid"});
+					}
+					return;
+				});
+			}
+			
+			if (key != "" && key != undefined) {
+				self.Database.GetUserInfoByKey(id, function (status, response) {
+					if (status) {					
+						res.json({error:"None", data:response.data});
+					} else {
+						res.json({error:"Not valid"});
+					}
+					return;
+				});
+			}
+		}
 	});
 }
 

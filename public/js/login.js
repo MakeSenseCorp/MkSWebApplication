@@ -17,6 +17,15 @@ $(document).ready(function(){
 			async: true,
 			success: function (data) {
 				console.log(data);
+				var ws = new WebSocket('ws://' + MakeSenseDomain + ':1982/', ['echo-protocol']);
+				ws.onopen = function () {
+					console.log('socket connection opened properly');
+				};
+				
+				ws.onclose = function () {
+					console.log("Connection closed...");
+				};
+				
 				// localStorage.setItem("key", data.key);
 				// localStorage.setItem("userId", data.id);
 				// window.location.href = "../index.html";				
