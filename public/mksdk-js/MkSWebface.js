@@ -22,13 +22,15 @@ MkSWebface.prototype.Login = function (usr, pwd, callback) {
 	});
 }
 
-MkSWebface.prototype.GetUserNodes = function (key, callback) {
+MkSWebface.prototype.GetUserNodeList = function (callback) {
 	var RequestData = {
-		request: "get_user_nodes",
+		request: "get_user_node_list",
 		data: {
-			user: key
+			key: MkSGlobal.UserDEVKey,
+			user_id: MkSGlobal.UserId
 		}
 	};
+	console.log(RequestData);
 	MkSGlobal.AjaxPostRequest(this.RestAPIFullUrl, "/api/get/nodes", "json", RequestData, function(response) {
 		callback(response);
 	});

@@ -12,6 +12,7 @@ $(document).ready(function() {
 		var webface = MkSWebfaceBuilder.GetInstance();
 		webface.Login(user, pwd, function(response) {
 			if ("none" == response.error) {				
+				console.log(response.data.key, response.data.id);
 				MkSGlobal.StoryUserKeyLocalStorage(response.data.key, response.data.id);
 				api.SetUserKey(response.data.key);
 				// Redirect to dashboard.

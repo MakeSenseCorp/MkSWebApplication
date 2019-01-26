@@ -42,17 +42,11 @@ $(document).ready(function() {
 		window.location.href = "../index.html";
 	});
 
-	console.log(localStorage.getItem("key"));
 	var api = MkSAPIBuilder.GetInstance();
 	api.ConnectGateway(onGatewayDataArrived);
-	
-	/*var info = {
-		key: localStorage.getItem("key"),
-		url: GetServerUrl(),
-	};
-	MkSRegisterToSensorListener(info, function(msg) {
-		console.log(msg);
-	});*/
-	// On load we need to get all user devices
-	GetDevices();
+	api.Webface.GetUserNodeList(function (nodes) {
+		// Get list of node from UUIDs database.
+		console.log(nodes);
+		// Foreach UUID we need to send "node_info" request.
+	});
 });

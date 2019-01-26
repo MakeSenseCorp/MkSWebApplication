@@ -21,7 +21,6 @@ var MkSAPIBuilder = (function () {
 	var Instance;
 
 	function CreateInstance () {
-		console.log(MkSGlobal.UserDEVKey);
 		if (MkSGlobal.CheckUserLocalStorage) {
 			return new MkSAPI(MkSGlobal.UserDEVKey);
 		} else {

@@ -11,6 +11,7 @@ function MkSWebface (webfaceInfo) {
 	this.RestAPIPort 		= webfaceInfo.RestAPIPort;
 	this.RestApi 			= express();
 	this.Database 			= null;
+	this.Gateway 			= null;
 	this.UserCacheDB		= []; // Valid users cache database
 	
 	this.RestApi.use(bodyParser.json());
@@ -25,6 +26,10 @@ function MkSWebface (webfaceInfo) {
 
 MkSWebface.prototype.SetDatabaseInstance = function (db) {
 	this.Database = db;
+}
+
+MkSWebface.prototype.SetGatewayInstance = function (gateway) {
+	this.Gateway = gateway;
 }
 
 MkSWebface.prototype.IsUserCacheExist = function (key) {
@@ -43,9 +48,17 @@ MkSWebface.prototype.InitRouter = function (server) {
 	server.post('/api/get/nodes', function(req, res) {
 		console.log(self.ModuleName, "/api/get/nodes");
 		if (req.body.data != undefined) {
-			var key = req.body.data.key;
+			var user_id = req.body.data.user_id;
+			self.Database.GetNodesByUserId(user_id, function(error, data) {
+				if (!error) {
+					res.json({error:"sql error", nodes:""});
+				} else {
+					res.json({error:"none", nodes:data});
+				}
+			});
+		} else {
+			res.json({error:"no post params"});
 		}
-		res.json({error:"none"});
 	});
 	
 	server.get('/api/get/cache/users', function(req, res) {

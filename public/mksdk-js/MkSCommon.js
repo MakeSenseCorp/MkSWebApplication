@@ -4,6 +4,7 @@ function MkSCommon () {
 	this.MakeSenseServerUrl	= "http://ec2-18-236-253-240.us-west-2.compute.amazonaws.com:8080/";
 	this.MakeSenseDomain	= "ec2-18-236-253-240.us-west-2.compute.amazonaws.com";
 	this.UserDEVKey			= localStorage.getItem("key");
+	this.UserId 			= localStorage.getItem("userId");
 	
 	return this;
 }

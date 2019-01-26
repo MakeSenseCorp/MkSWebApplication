@@ -51,17 +51,19 @@ MkSDatabase.prototype.IsUuidExist = function (uuid, callback) {
 					"WHERE `uuid` = '" + uuid + "';";
 
 		sql.all(query, function(err, rows) {
-			if (rows.length > 0) {
-				if (rows[0].status == 'OK') {
-					callback (true, {
-						status:"OK", 
-						data:{
-							user_id: rows[0].user_id,
-							is_valid: rows[0].is_valid,
-							last_used_timestamp: rows[0].last_used_timestamp
-						}
-					});
-					return;
+			if (rows != undefined) {
+				if (rows.length > 0) {
+					if (rows[0].status == 'OK') {
+						callback (true, {
+							status:"OK", 
+							data:{
+								user_id: rows[0].user_id,
+								is_valid: rows[0].is_valid,
+								last_used_timestamp: rows[0].last_used_timestamp
+							}
+						});
+						return;
+					}
 				}
 			}
 			callback (false, null);
@@ -74,13 +76,17 @@ MkSDatabase.prototype.GetNodesByUserId = function (user_id, callback) {
 	var sql 	= this.UuidDB;
 	
 	sql.serialize(function() {
+		if ("" == user_id) {
+			user_id = 0
+		}
+		
 		var query = "SELECT * " +
-					"FROM  `tbl_uuids` " +
+					"FROM `tbl_uuids` " +
 					"WHERE `user_id` = " + user_id + ";";
-
+		
 		sql.all(query, function(err, rows) {
-			if (rows.length > 0) {
-				if (rows[0].status == 'OK') {
+			if (rows != undefined) {
+				if (rows.length > 0) {
 					callback (true, {
 						status:"OK", 
 						data:rows
