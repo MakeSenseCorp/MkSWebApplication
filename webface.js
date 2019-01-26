@@ -73,7 +73,6 @@ MkSWebface.prototype.InitRouter = function (server) {
 			var user = req.body.data.user;
 			var pwd  = req.body.data.pwd;
 			
-			console.log(self.ModuleName, "login", user, pwd);
 			self.Database.LoginCheck(user, pwd, function (status, response) {
 				if (status) {
 					if (!self.IsUserCacheExist(response.data.key)) {
@@ -98,7 +97,6 @@ MkSWebface.prototype.InitRouter = function (server) {
 			var user = req.body.data.user;
 			var pwd  = req.body.data.pwd;
 			
-			console.log(self.ModuleName, "login", user, pwd);
 			self.Database.LoginCheck(user, pwd, function (status, response) {
 				if (status) {
 					if (!self.IsUserCacheExist(response.data.key)) {

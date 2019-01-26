@@ -30,6 +30,15 @@ function Connection (uuid, sock) {
 	return this;
 }
 
+function ApplicationSession (key, sock) {
+	self = this;
+	
+	this.Socket 		= sock;
+	this.Key 			= key;
+	
+	return this;
+}
+
 function MkSGateway (gatewayInfo) {
 	var self = this;
 	// Static variables section
@@ -81,6 +90,17 @@ MkSGateway.prototype.InitRouter = function (server) {
 	});
 }
 
+MkSGateway.prototype.FindSessionBySocket = function (socket) {
+	for (var key in this.ApplicationList) {
+		var session = this.ApplicationList[key];
+		console.log(socket, session.Socket);
+		if (socket == session.Socket)
+			return session;
+	}
+	
+	return null;
+}
+
 MkSGateway.prototype.GetConnectionsApplicationList = function () {
 	console.log(this.ModuleName, "GetConnectionsApplicationList");
 }
@@ -129,17 +149,23 @@ MkSGateway.prototype.Start = function () {
 		var connection = request.accept('echo-protocol', request.origin);
 		var wsHandle = self.WSApplicationClients.push(connection) - 1;
 		
-		console.log(self.ModuleName, "New connection request");
-		
 		connection.on('message', function(message) {
 			if (message.type === 'utf8') {
 				connection.LastMessageData = message.utf8Data;
 				jsonData = JSON.parse(message.utf8Data);
-				console.log(self.ModuleName, "Data from application", jsonData);
+				
+				if ("handshake" == jsonData.msg_type) {
+					console.log(self.ModuleName, (new Date()), "Register new application session:", jsonData.key);
+					request.httpRequest.headers.UserKey = jsonData.key;
+					self.ApplicationList[jsonData.key] = new ApplicationSession(jsonData.key, connection);
+				}
 			}
 		});
+		
 		connection.on('close', function(connection) {
-			console.log (self.ModuleName, (new Date()), "Unregister node:");
+			// Remove application session
+			console.log (self.ModuleName, (new Date()), "Unregister application session:", request.httpRequest.headers.UserKey);
+			delete self.ApplicationList[request.httpRequest.headers.UserKey];
 			// Removing connection from the list.
 			self.WSApplicationClients.splice(wsHandle, 1); // Consider to remove this list, we have a connections map.
 		});
@@ -172,7 +198,7 @@ MkSGateway.prototype.Start = function () {
 			if (status) {
 				self.Database.IsUserKeyExist(request.httpRequest.headers.key, function (status, data) {
 					if (status) {
-						console.log(self.ModuleName, (new Date()), "Register node: ", request.httpRequest.headers.uuid);
+						console.log(self.ModuleName, (new Date()), "Register node:", request.httpRequest.headers.uuid);
 						var wsHandle = self.WSNodeClients.push(connection) - 1;
 						// Storing node connection into map.
 						self.NodeList[request.httpRequest.headers.uuid] = new Connection(request.httpRequest.headers.uuid, connection);
