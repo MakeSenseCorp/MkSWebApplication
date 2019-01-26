@@ -1,34 +1,23 @@
 
-$(document).ready(function(){
-	$("#login").click(function() {		
-		var RequestData = {
-			request: "login",
-			data: {
-				user: $('#username').val(),
-				pwd:  $('#password').val()
-			}
-		};
+$(document).ready(function() {
+	if (MkSGlobal.CheckUserLocalStorage()) {
+		window.location.href = "dashboard.html"
+	}
+	
+	$("#login").click(function() {	
+		var user = $('#username').val();
+		var pwd	 = $('#password').val();
 		
-		$.ajax({
-			url: MakeSenseServerUrl + "api/login/",
-			type: "POST",
-			dataType: "json",
-			data: RequestData,
-			async: true,
-			success: function (data) {
-				console.log(data);
-				var ws = new WebSocket('ws://' + MakeSenseDomain + ':1982/', ['echo-protocol']);
-				ws.onopen = function () {
-					console.log('socket connection opened properly');
-				};
-				
-				ws.onclose = function () {
-					console.log("Connection closed...");
-				};
-				
-				// localStorage.setItem("key", data.key);
-				// localStorage.setItem("userId", data.id);
-				// window.location.href = "../index.html";				
+		var api = MkSAPIBuilder.GetInstance();
+		var webface = MkSWebfaceBuilder.GetInstance();
+		webface.Login(user, pwd, function(response) {
+			if ("none" == response.error) {				
+				MkSGlobal.StoryUserKeyLocalStorage(response.data.key, response.data.id);
+				api.SetUserKey(response.data.key);
+				// Redirect to dashboard.
+				window.location.href = "../index.html";
+			} else {
+				alert("Incorrect authentication");
 			}
 		});
 	});

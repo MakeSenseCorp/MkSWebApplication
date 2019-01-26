@@ -54,6 +54,8 @@ function MkSGateway (gatewayInfo) {
 		console.log(self.ModuleName, "RESTApi running on port", self.RestApiServer.address().port);
 	});
 	this.InitRouter(this.RestApi);
+	
+	return this;
 }
 
 MkSGateway.prototype.SetDatabaseInstance = function (db) {
@@ -133,6 +135,7 @@ MkSGateway.prototype.Start = function () {
 			if (message.type === 'utf8') {
 				connection.LastMessageData = message.utf8Data;
 				jsonData = JSON.parse(message.utf8Data);
+				console.log(self.ModuleName, "Data from application", jsonData);
 			}
 		});
 		connection.on('close', function(connection) {

@@ -30,17 +30,29 @@ function ResetPage() {
 	GetDevices();
 }
 
+function onGatewayDataArrived (data) {
+	console.log(data);
+}
+
 var objStorage = Storage();
 $(document).ready(function() {
-	LogoutHandler();
+	// Logout simple handler
+	$("#logout").click(function() {
+		localStorage.removeItem("key");
+		window.location.href = "../index.html";
+	});
+
+	console.log(localStorage.getItem("key"));
+	var api = MkSAPIBuilder.GetInstance();
+	api.ConnectGateway(onGatewayDataArrived);
 	
-	var info = {
+	/*var info = {
 		key: localStorage.getItem("key"),
 		url: GetServerUrl(),
 	};
 	MkSRegisterToSensorListener(info, function(msg) {
 		console.log(msg);
-	});
+	});*/
 	// On load we need to get all user devices
 	GetDevices();
 });

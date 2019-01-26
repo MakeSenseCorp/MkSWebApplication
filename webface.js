@@ -40,7 +40,7 @@ MkSWebface.prototype.IsUserCacheExist = function (key) {
 MkSWebface.prototype.InitRouter = function (server) {
 	var self = this;
 	
-	server.post('/api/get/nodes/', function(req, res) {
+	server.post('/api/get/nodes', function(req, res) {
 		console.log(self.ModuleName, "/api/get/nodes");
 		if (req.body.data != undefined) {
 			var key = req.body.data.key;
@@ -50,10 +50,10 @@ MkSWebface.prototype.InitRouter = function (server) {
 	
 	server.get('/api/get/cache/users', function(req, res) {
 		console.log(self.ModuleName, "/api/get/cache/users");
-		res.json({error:"None", users:self.UserCacheDB});
+		res.json({error:"none", users:self.UserCacheDB});
 	});
 	
-	server.post('/api/login/', function(req, res) {
+	server.post('/api/login', function(req, res) {
 		console.log(self.ModuleName, "/api/login");
 		
 		if (req.body.data != undefined) {
@@ -67,7 +67,7 @@ MkSWebface.prototype.InitRouter = function (server) {
 						self.UserCacheDB.push(response);
 					}
 					
-					res.json({error:"None", data:response.data});
+					res.json({error:"none", data:response.data});
 					
 					self.Database.UpdateLastLoginTimestamp(response.data.id, function (status, response) {
 					});
@@ -92,7 +92,7 @@ MkSWebface.prototype.InitRouter = function (server) {
 						self.UserCacheDB.push(response);
 					}
 					
-					res.json({error:"None", data:response.data});
+					res.json({error:"none", data:response.data});
 					
 					self.Database.UpdateLastLoginTimestamp(response.data.id, function (status, response) {
 					});
