@@ -154,10 +154,21 @@ MkSGateway.prototype.Start = function () {
 				connection.LastMessageData = message.utf8Data;
 				jsonData = JSON.parse(message.utf8Data);
 				
-				if ("handshake" == jsonData.msg_type) {
+				console.log("\n", self.ModuleName, "Application -> Node", jsonData, "\n");
+				
+				if ("HANDSHAKE" == jsonData.msg_type) {
 					console.log(self.ModuleName, (new Date()), "Register new application session:", jsonData.key);
 					request.httpRequest.headers.UserKey = jsonData.key;
 					self.ApplicationList[jsonData.key] = new ApplicationSession(jsonData.key, connection);
+				} else {
+					switch(jsonData.msg_type) {
+						case "DIRECT":
+							var destination = jsonData.destination;
+							self.NodeList[destination].Socket.send(JSON.stringify(jsonData));	
+						break;
+						default:
+						break;
+					}
 				}
 			}
 		});
@@ -206,6 +217,8 @@ MkSGateway.prototype.Start = function () {
 							if (message.type === 'utf8') {
 								connection.LastMessageData = message.utf8Data;
 								jsonData = JSON.parse(message.utf8Data);
+								
+								console.log("\n", self.ModuleName, "Node -> Application", jsonData, "\n");
 							}
 						});
 						connection.on('close', function(connection) {

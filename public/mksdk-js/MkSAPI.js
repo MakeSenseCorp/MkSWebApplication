@@ -17,6 +17,10 @@ MkSAPI.prototype.ConnectGateway = function () {
 	this.Gateway = MkSGatewayBuilder.GetInstance(this.Key);
 }
 
+MkSAPI.prototype.GetNodeInfo = function (uuid) {
+	this.Gateway.Send("DIRECT", uuid, "get_node_info", "", "");
+}
+
 var MkSAPIBuilder = (function () {
 	var Instance;
 

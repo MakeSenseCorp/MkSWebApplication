@@ -10,8 +10,14 @@ function MkSGateway (key) {
 	this.WSServerFullURl	= this.WSServerUrl.concat(":", this.WSServerPort);
 	this.WSState 			= "DISCONN";
 	
-	this.Connect();
+	// Callbacks
+	this.OnGatewayDataArrived 				= null;
+	this.OnGetNodeInfoCallback 				= null;
+	this.OnNodeInfoChangeCallback 			= null;
+	this.OnNodeSensorInfoChangeCallback 	= null;
+	this.OnGatewayConnectedCallback			= null;
 	
+	this.Connect();
 	return this;
 }
 
@@ -26,12 +32,17 @@ MkSGateway.prototype.Connect = function (callback) {
 		this.WS = new WebSocket(this.WSServerFullURl, ['echo-protocol']);
 		this.WS.onopen = function () {
 			var handshakeMsg = {
-				msg_type: 'handshake',
+				msg_type: 'HANDSHAKE',
 				key: self.Key
 			};
 			console.log('Connected to Gateway ... Sending handshake ...', handshakeMsg);
 			self.WS.send(JSON.stringify(handshakeMsg));
 			this.WSState = "CONN";
+			
+			if (null != self.OnGatewayConnectedCallback) {
+				console.log("Callback");
+				self.OnGatewayConnectedCallback();
+			}
 		};
 		
 		this.WS.onmessage = function (event) {
@@ -44,6 +55,35 @@ MkSGateway.prototype.Connect = function (callback) {
 			this.WSState = "DISCONN";
 		};
 	}
+}
+
+MkSGateway.prototype.Send = function (type, dest_uuid, cmd, payload, additional) {
+	if ("" == additional) {
+		additional = {};
+	}
+	
+	if ("" == payload) {
+		payload = {};
+	}
+	
+	request = {
+		msg_type: type,
+		destination: dest_uuid,
+		source: "WEBFACE",
+		data: {
+			device: {
+				command: cmd,
+				timestamp: Date.now()
+			},
+			payload: payload
+		},
+		user: {
+			key: this.Key
+		},
+		additional: additional
+	}
+	
+	this.WS.send(JSON.stringify(request));
 }
 
 MkSGateway.prototype.SetRestApi = function (url, port) {

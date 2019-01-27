@@ -34,6 +34,23 @@ function onGatewayDataArrived (data) {
 	console.log(data);
 }
 
+function OnGatewayConnected () {
+	var api = MkSAPIBuilder.GetInstance();
+	// TODO - 	Consider to access Database instanse instead of Webface.
+	// 			We need a state machine for communication module.
+	api.Webface.GetUserNodeList(function (response) {
+		// Get list of node from UUIDs database.
+		console.log(response);
+		console.log(response.nodes.data, response.nodes.data.length);
+		for (var idx = 0; idx < response.nodes.data.length; idx++) {
+			var node = response.nodes.data[idx];
+			console.log(node.uuid);
+			api.GetNodeInfo(node.uuid);
+		}
+		// Foreach UUID we need to send "node_info" request.
+	});
+}
+
 var objStorage = Storage();
 $(document).ready(function() {
 	// Logout simple handler
@@ -44,9 +61,5 @@ $(document).ready(function() {
 
 	var api = MkSAPIBuilder.GetInstance();
 	api.ConnectGateway(onGatewayDataArrived);
-	api.Webface.GetUserNodeList(function (nodes) {
-		// Get list of node from UUIDs database.
-		console.log(nodes);
-		// Foreach UUID we need to send "node_info" request.
-	});
+	api.Gateway.OnGatewayConnectedCallback = OnGatewayConnected;
 });
