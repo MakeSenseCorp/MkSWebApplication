@@ -11,11 +11,17 @@ function MkSGateway (key) {
 	this.WSState 			= "DISCONN";
 	
 	// Callbacks
-	this.OnGatewayDataArrived 				= null;
+	this.OnGatewayDataArrivedCallback 		= null;
 	this.OnGetNodeInfoCallback 				= null;
-	this.OnNodeInfoChangeCallback 			= null;
-	this.OnNodeSensorInfoChangeCallback 	= null;
+	this.OnGetNodeSensorInfoCallback 		= null;
+	this.OnSetNodeSensorInfoCallback 		= null;
 	this.OnGatewayConnectedCallback			= null;
+	
+	this.Callbacks = {
+		"get_node_info": this.OnGetNodeInfoCallback,
+		"get_sensor_info": this.OnGetNodeSensorInfoCallback,
+		"set_sensor_info": this.OnSetNodeSensorInfoCallback
+	};
 	
 	this.Connect();
 	return this;
@@ -25,34 +31,39 @@ MkSGateway.prototype.WSWatchdog = function () {
 	
 }
 
-MkSGateway.prototype.Connect = function (callback) {
+MkSGateway.prototype.Connect = function () {
 	var self = this;
 	
 	if ("DISCONN" == this.WSState) {
 		this.WS = new WebSocket(this.WSServerFullURl, ['echo-protocol']);
 		this.WS.onopen = function () {
 			var handshakeMsg = {
-				msg_type: 'HANDSHAKE',
+				message_type: 'HANDSHAKE',
 				key: self.Key
 			};
 			console.log('Connected to Gateway ... Sending handshake ...', handshakeMsg);
 			self.WS.send(JSON.stringify(handshakeMsg));
-			this.WSState = "CONN";
+			self.WSState = "CONN";
 			
 			if (null != self.OnGatewayConnectedCallback) {
-				console.log("Callback");
 				self.OnGatewayConnectedCallback();
 			}
 		};
 		
 		this.WS.onmessage = function (event) {
-			console.log(event.data);
-			callback(event.data);
+			var jsonData = JSON.parse(event.data);
+			var handler = self.Callbacks[jsonData.data.device.command];
+			console.log(self.Callbacks);
+			if (undefined != handler) {
+				console.log("HANDLER");
+				handler(event.data);
+			}
+			self.OnGatewayDataArrivedCallback(jsonData);
 		}
 		
 		this.WS.onclose = function () {
 			console.log("Connection closed...");
-			this.WSState = "DISCONN";
+			self.WSState = "DISCONN";
 		};
 	}
 }
@@ -67,7 +78,7 @@ MkSGateway.prototype.Send = function (type, dest_uuid, cmd, payload, additional)
 	}
 	
 	request = {
-		msg_type: type,
+		message_type: type,
 		destination: dest_uuid,
 		source: "WEBFACE",
 		data: {

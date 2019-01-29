@@ -30,11 +30,23 @@ function ResetPage() {
 	GetDevices();
 }
 
-function onGatewayDataArrived (data) {
-	console.log(data);
+function onGetNodeInfo (data) {
+	console.log("onGetNodeInfo", data);
 }
 
-function OnGatewayConnected () {
+function onGetNodeSensorInfo (data) {
+	console.log("onGetNodeSensorInfo", data);
+}
+
+function onSetNodeSensorInfo (data) {
+	console.log("onSetNodeSensorInfo", data);
+}
+
+function onGatewayDataArrived (data) {
+	console.log("onGatewayDataArrived", data);
+}
+
+function onGatewayConnected () {
 	var api = MkSAPIBuilder.GetInstance();
 	// TODO - 	Consider to access Database instanse instead of Webface.
 	// 			We need a state machine for communication module.
@@ -60,6 +72,10 @@ $(document).ready(function() {
 	});
 
 	var api = MkSAPIBuilder.GetInstance();
-	api.ConnectGateway(onGatewayDataArrived);
-	api.Gateway.OnGatewayConnectedCallback = OnGatewayConnected;
+	api.ConnectGateway();
+	api.Gateway.OnGetNodeInfoCallback			= onGetNodeInfo;
+	api.Gateway.OnGetNodeSensorInfoCallback		= onGetNodeSensorInfo;
+	api.Gateway.OnSetNodeSensorInfoCallback		= onSetNodeSensorInfo;
+	api.Gateway.OnGatewayDataArrivedCallback 	= onGatewayDataArrived;
+	api.Gateway.OnGatewayConnectedCallback 		= onGatewayConnected;
 });

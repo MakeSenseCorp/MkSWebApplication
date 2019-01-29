@@ -156,15 +156,32 @@ MkSGateway.prototype.Start = function () {
 				
 				console.log("\n", self.ModuleName, "Application -> Node", jsonData, "\n");
 				
-				if ("HANDSHAKE" == jsonData.msg_type) {
+				if ("HANDSHAKE" == jsonData.message_type) {
 					console.log(self.ModuleName, (new Date()), "Register new application session:", jsonData.key);
 					request.httpRequest.headers.UserKey = jsonData.key;
 					self.ApplicationList[jsonData.key] = new ApplicationSession(jsonData.key, connection);
 				} else {
-					switch(jsonData.msg_type) {
+					var destination = jsonData.destination;
+					switch(jsonData.message_type) {
 						case "DIRECT":
-							var destination = jsonData.destination;
-							self.NodeList[destination].Socket.send(JSON.stringify(jsonData));	
+							var node = self.NodeList[destination];
+							if (undefined != node) {
+								node.Socket.send(JSON.stringify(jsonData));
+							}
+						break;
+						case "PRIVATE":
+						break;
+						case "BROADCAST":
+							// Send to all nodes.
+							for (key in self.NodesList) {
+								self.NodesList[key].Socket.send(JSON.stringify(jsonData));
+							}
+						break;
+						case "GROUP":
+						break;
+						case "WEBFACE":
+						break;
+						case "CUSTOM":
 						break;
 						default:
 						break;
@@ -219,6 +236,46 @@ MkSGateway.prototype.Start = function () {
 								jsonData = JSON.parse(message.utf8Data);
 								
 								console.log("\n", self.ModuleName, "Node -> Application", jsonData, "\n");
+								
+								if ("HANDSHAKE" == jsonData.message_type) {
+								} else {
+									var destination = jsonData.destination;
+									switch(jsonData.message_type) {
+										case "DIRECT":
+											var node = self.NodeList[destination];
+											if (undefined != node) {
+												node.Socket.send(JSON.stringify(jsonData));
+											} else {
+												if ("WEBFACE" == destination) {
+													var session = self.ApplicationList[jsonData.user.key];
+													if (undefined != session) {
+														session.Socket.send(JSON.stringify(jsonData));
+													}
+												}
+											}
+										break;
+										case "PRIVATE":
+										break;
+										case "BROADCAST":
+											// Send to all nodes.
+											for (key in self.NodesList) {
+												self.NodesList[key].Socket.send(JSON.stringify(jsonData));
+											}
+											
+											for (key in self.ApplicationList) {
+												self.ApplicationList[key].Socket.send(JSON.stringify(jsonData));
+											}
+										break;
+										case "GROUP":
+										break;
+										case "WEBFACE":
+										break;
+										case "CUSTOM":
+										break;
+										default:
+										break;
+									}
+								}
 							}
 						});
 						connection.on('close', function(connection) {
