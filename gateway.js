@@ -240,6 +240,7 @@ MkSGateway.prototype.Start = function () {
 								if ("HANDSHAKE" == jsonData.message_type) {
 								} else {
 									var destination = jsonData.destination;
+									var source 		= jsonData.source;
 									switch(jsonData.message_type) {
 										case "DIRECT":
 											var node = self.NodeList[destination];
@@ -251,6 +252,8 @@ MkSGateway.prototype.Start = function () {
 													if (undefined != session) {
 														session.Socket.send(JSON.stringify(jsonData));
 													}
+												} else if ("GATEWAY" == destination) {
+													console.log("\n", self.ModuleName, "PAY ATTENTION - SOMEONE SENT MESSAGE TO GATEWAY\n");
 												}
 											}
 										break;
@@ -272,6 +275,24 @@ MkSGateway.prototype.Start = function () {
 										break;
 										case "CUSTOM":
 										break;
+										case "MASTER":
+											if ("GATEWAY" == destination) {
+												var master 	= self.NodeList[source];
+												var payload = jsonData.data.payload;
+												console.log(jsonData.data.payload); 
+												switch(jsonData.data.device.command) {
+													case "node_connected":
+														console.log(self.ModuleName, (new Date()), "Register node:", payload.node.uuid);
+														self.NodeList[payload.node.uuid] = new Connection(payload.node.uuid, master.Socket);
+													break;
+													case "node_disconnected":
+														console.log (self.ModuleName, (new Date()), "Unregister node:", payload.node.uuid);
+														self.NodeList[payload.node.uuid].CleanSubscribers();
+														delete self.NodeList[payload.node.uuid];
+													break;
+												}
+											}
+										break;
 										default:
 										break;
 									}
@@ -280,6 +301,7 @@ MkSGateway.prototype.Start = function () {
 						});
 						connection.on('close', function(connection) {
 							console.log (self.ModuleName, (new Date()), "Unregister node:", request.httpRequest.headers.uuid);
+							// TODO - Delete all nodes connection related to this master
 							self.NodeList[request.httpRequest.headers.uuid].CleanSubscribers();
 							delete self.NodeList[request.httpRequest.headers.uuid];
 							// Removing connection from the list.

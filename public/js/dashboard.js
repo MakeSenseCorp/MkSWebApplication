@@ -71,11 +71,16 @@ $(document).ready(function() {
 		window.location.href = "../index.html";
 	});
 
+	// Gey makesense api instanse.
 	var api = MkSAPIBuilder.GetInstance();
+	// Connect gateway.
 	api.ConnectGateway();
+	// Register all gateway events.
 	api.Gateway.OnGetNodeInfoCallback			= onGetNodeInfo;
 	api.Gateway.OnGetNodeSensorInfoCallback		= onGetNodeSensorInfo;
 	api.Gateway.OnSetNodeSensorInfoCallback		= onSetNodeSensorInfo;
 	api.Gateway.OnGatewayDataArrivedCallback 	= onGatewayDataArrived;
 	api.Gateway.OnGatewayConnectedCallback 		= onGatewayConnected;
+	// Update callback table with registered event.
+	api.Gateway.UpdateCallbackTable();
 });

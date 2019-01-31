@@ -9,6 +9,7 @@ function MkSGateway (key) {
 	this.RestAPIFullUrl 	= this.RestAPIUrl.concat(":", this.RestAPIPort);
 	this.WSServerFullURl	= this.WSServerUrl.concat(":", this.WSServerPort);
 	this.WSState 			= "DISCONN";
+	this.Callbacks 			= {};
 	
 	// Callbacks
 	this.OnGatewayDataArrivedCallback 		= null;
@@ -17,18 +18,18 @@ function MkSGateway (key) {
 	this.OnSetNodeSensorInfoCallback 		= null;
 	this.OnGatewayConnectedCallback			= null;
 	
-	this.Callbacks = {
-		"get_node_info": this.OnGetNodeInfoCallback,
-		"get_sensor_info": this.OnGetNodeSensorInfoCallback,
-		"set_sensor_info": this.OnSetNodeSensorInfoCallback
-	};
-	
 	this.Connect();
 	return this;
 }
 
 MkSGateway.prototype.WSWatchdog = function () {
 	
+}
+
+MkSGateway.prototype.UpdateCallbackTable = function () {
+	this.Callbacks["get_node_info"] 	= this.OnGetNodeInfoCallback;
+	this.Callbacks["get_sensor_info"] 	= this.OnGetNodeSensorInfoCallback;
+	this.Callbacks["set_sensor_info"] 	= this.OnSetNodeSensorInfoCallback;
 }
 
 MkSGateway.prototype.Connect = function () {
@@ -53,9 +54,7 @@ MkSGateway.prototype.Connect = function () {
 		this.WS.onmessage = function (event) {
 			var jsonData = JSON.parse(event.data);
 			var handler = self.Callbacks[jsonData.data.device.command];
-			console.log(self.Callbacks);
 			if (undefined != handler) {
-				console.log("HANDLER");
 				handler(event.data);
 			}
 			self.OnGatewayDataArrivedCallback(jsonData);
