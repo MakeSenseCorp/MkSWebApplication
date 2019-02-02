@@ -39,7 +39,9 @@ MkSGateway.prototype.Connect = function () {
 		this.WS = new WebSocket(this.WSServerFullURl, ['echo-protocol']);
 		this.WS.onopen = function () {
 			var handshakeMsg = {
-				message_type: 'HANDSHAKE',
+				header: {
+					message_type: 'HANDSHAKE'
+				},
 				key: self.Key
 			};
 			console.log('Connected to Gateway ... Sending handshake ...', handshakeMsg);
@@ -53,7 +55,7 @@ MkSGateway.prototype.Connect = function () {
 		
 		this.WS.onmessage = function (event) {
 			var jsonData = JSON.parse(event.data);
-			var handler = self.Callbacks[jsonData.data.device.command];
+			var handler = self.Callbacks[jsonData.data.header.command];
 			if (undefined != handler) {
 				handler(event.data);
 			}
@@ -77,11 +79,13 @@ MkSGateway.prototype.Send = function (type, dest_uuid, cmd, payload, additional)
 	}
 	
 	request = {
-		message_type: type,
-		destination: dest_uuid,
-		source: "WEBFACE",
+		header: {
+			message_type: type,
+			destination: dest_uuid,
+			source: "WEBFACE"
+		},
 		data: {
-			device: {
+			header: {
 				command: cmd,
 				timestamp: Date.now()
 			},

@@ -156,13 +156,13 @@ MkSGateway.prototype.Start = function () {
 				
 				console.log("\n", self.ModuleName, "Application -> Node", jsonData, "\n");
 				
-				if ("HANDSHAKE" == jsonData.message_type) {
+				if ("HANDSHAKE" == jsonData.header.message_type) {
 					console.log(self.ModuleName, (new Date()), "Register new application session:", jsonData.key);
 					request.httpRequest.headers.UserKey = jsonData.key;
 					self.ApplicationList[jsonData.key] = new ApplicationSession(jsonData.key, connection);
 				} else {
-					var destination = jsonData.destination;
-					switch(jsonData.message_type) {
+					var destination = jsonData.header.destination;
+					switch(jsonData.header.message_type) {
 						case "DIRECT":
 							var node = self.NodeList[destination];
 							if (undefined != node) {
@@ -237,11 +237,11 @@ MkSGateway.prototype.Start = function () {
 								
 								console.log("\n", self.ModuleName, "Node -> Application", jsonData, "\n");
 								
-								if ("HANDSHAKE" == jsonData.message_type) {
+								if ("HANDSHAKE" == jsonData.header.message_type) {
 								} else {
-									var destination = jsonData.destination;
-									var source 		= jsonData.source;
-									switch(jsonData.message_type) {
+									var destination = jsonData.header.destination;
+									var source 		= jsonData.header.source;
+									switch(jsonData.header.message_type) {
 										case "DIRECT":
 											var node = self.NodeList[destination];
 											if (undefined != node) {
@@ -280,7 +280,7 @@ MkSGateway.prototype.Start = function () {
 												var master 	= self.NodeList[source];
 												var payload = jsonData.data.payload;
 												console.log(jsonData.data.payload); 
-												switch(jsonData.data.device.command) {
+												switch(jsonData.data.header.command) {
 													case "node_connected":
 														console.log(self.ModuleName, (new Date()), "Register node:", payload.node.uuid);
 														self.NodeList[payload.node.uuid] = new Connection(payload.node.uuid, master.Socket);
