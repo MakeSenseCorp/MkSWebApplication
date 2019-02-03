@@ -243,17 +243,25 @@ MkSGateway.prototype.Start = function () {
 									var source 		= jsonData.header.source;
 									switch(jsonData.header.message_type) {
 										case "DIRECT":
-											var node = self.NodeList[destination];
-											if (undefined != node) {
-												node.Socket.send(JSON.stringify(jsonData));
+											if ("GATEWAY" == destination) {
+												switch (jsonData.data.header.command) {
+													case 'ping':
+														console.log("\n", self.ModuleName, "PING from", jsonData.header.source, "\n");
+													break;
+												}
 											} else {
-												if ("WEBFACE" == destination) {
-													var session = self.ApplicationList[jsonData.user.key];
-													if (undefined != session) {
-														session.Socket.send(JSON.stringify(jsonData));
+												var node = self.NodeList[destination];
+												if (undefined != node) {
+													node.Socket.send(JSON.stringify(jsonData));
+												} else {
+													if ("WEBFACE" == destination) {
+														var session = self.ApplicationList[jsonData.user.key];
+														if (undefined != session) {
+															session.Socket.send(JSON.stringify(jsonData));
+														}
+													} else if ("GATEWAY" == destination) {
+														console.log("\n", self.ModuleName, "PAY ATTENTION - SOMEONE SENT MESSAGE TO GATEWAY\n");
 													}
-												} else if ("GATEWAY" == destination) {
-													console.log("\n", self.ModuleName, "PAY ATTENTION - SOMEONE SENT MESSAGE TO GATEWAY\n");
 												}
 											}
 										break;

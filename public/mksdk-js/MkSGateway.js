@@ -57,7 +57,7 @@ MkSGateway.prototype.Connect = function () {
 			var jsonData = JSON.parse(event.data);
 			var handler = self.Callbacks[jsonData.data.header.command];
 			if (undefined != handler) {
-				handler(event.data);
+				handler(jsonData);
 			}
 			self.OnGatewayDataArrivedCallback(jsonData);
 		}

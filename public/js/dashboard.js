@@ -25,13 +25,17 @@ function GetDevices() {
 	});
 }
 
+// Gey makesense api instanse.
+var api = MkSAPIBuilder.GetInstance();
+
 function ResetPage() {
 	document.getElementById('sensors_context').innerHTML = "";
 	GetDevices();
 }
 
 function onGetNodeInfo (data) {
-	console.log("onGetNodeInfo", data);
+	console.log("onGetNodeInfo", data.header.source);
+	api.GetNodeSensorsInfo(data.header.source);
 }
 
 function onGetNodeSensorInfo (data) {
@@ -71,8 +75,6 @@ $(document).ready(function() {
 		window.location.href = "../index.html";
 	});
 
-	// Gey makesense api instanse.
-	var api = MkSAPIBuilder.GetInstance();
 	// Connect gateway.
 	api.ConnectGateway();
 	// Register all gateway events.
