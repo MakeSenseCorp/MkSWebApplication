@@ -40,6 +40,20 @@ function onGetNodeInfo (data) {
 
 function onGetNodeSensorInfo (data) {
 	console.log("onGetNodeSensorInfo", data);
+	payload = { 
+		sensors: [
+			{
+				id: 3,
+				domain: 1,
+				value: "1",
+				name: "Hello",
+				description: "Sensor",
+				type: "Single Switch",
+				group: 255
+			}
+		]
+	};
+	api.SetNodeSensorsInfo("ac6de837-7863-72a9-c789-a0aae7e9d310", payload);
 }
 
 function onSetNodeSensorInfo (data) {

@@ -25,6 +25,10 @@ MkSAPI.prototype.GetNodeSensorsInfo = function (uuid) {
 	this.Gateway.Send("DIRECT", uuid, "get_sensor_info", "", "");
 }
 
+MkSAPI.prototype.SetNodeSensorsInfo = function (uuid, sensors) {
+	this.Gateway.Send("DIRECT", uuid, "set_sensor_info", sensors, "");
+}
+
 var MkSAPIBuilder = (function () {
 	var Instance;
 
