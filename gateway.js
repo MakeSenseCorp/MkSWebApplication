@@ -58,6 +58,12 @@ function MkSGateway (gatewayInfo) {
 	
 	this.RestApi.use(bodyParser.json());
 	this.RestApi.use(bodyParser.urlencoded({ extended: true }));
+
+	this.RestApi.use(function(req, res, next) {
+		res.header("Access-Control-Allow-Origin", "*");
+		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+		next();
+	});
 	
 	this.RestApiServer = this.RestApi.listen(this.RestAPIPort, function () {
 		console.log(self.ModuleName, "RESTApi running on port", self.RestApiServer.address().port);
@@ -76,7 +82,12 @@ MkSGateway.prototype.InitRouter = function (server) {
 	
 	server.get('/api/get/app/connections', function(req, res) {
 		console.log(self.ModuleName, "/api/get/app/connections");
-		res.json({error:"none"});
+		var connections = [];
+		for (var key in self.ApplicationList) {
+			var item = self.ApplicationList[key];
+			connections.push({uuid:item.Key});
+		}
+		res.json({error:"none", data:connections});
 	});
 	
 	server.get('/api/get/node/connections', function(req, res) {

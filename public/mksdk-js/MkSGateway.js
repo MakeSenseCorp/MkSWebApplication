@@ -17,6 +17,7 @@ function MkSGateway (key) {
 	this.OnGetNodeSensorInfoCallback 		= null;
 	this.OnSetNodeSensorInfoCallback 		= null;
 	this.OnGatewayConnectedCallback			= null;
+	this.OnGetFileCallback					= null;
 	
 	this.Connect();
 	return this;
@@ -30,6 +31,7 @@ MkSGateway.prototype.UpdateCallbackTable = function () {
 	this.Callbacks["get_node_info"] 	= this.OnGetNodeInfoCallback;
 	this.Callbacks["get_sensor_info"] 	= this.OnGetNodeSensorInfoCallback;
 	this.Callbacks["set_sensor_info"] 	= this.OnSetNodeSensorInfoCallback;
+	this.Callbacks["get_file"] 			= this.OnGetFileCallback;
 }
 
 MkSGateway.prototype.Connect = function () {

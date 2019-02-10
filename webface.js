@@ -16,6 +16,12 @@ function MkSWebface (webfaceInfo) {
 	
 	this.RestApi.use(bodyParser.json());
 	this.RestApi.use(bodyParser.urlencoded({ extended: true }));
+
+	this.RestApi.use(function(req, res, next) {
+		res.header("Access-Control-Allow-Origin", "*");
+		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+		next();
+	});
 	
 	this.RestApi.use(express.static(path.join(__dirname, 'public')));
 	this.RestApiServer = this.RestApi.listen(this.RestAPIPort, function () {

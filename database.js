@@ -16,6 +16,15 @@ function MkSDatabase (databaseInfo) {
 	
 	this.InitUuidDatabase();
 	this.InitUserDatabase();
+
+	this.RestApi.use(bodyParser.json());
+	this.RestApi.use(bodyParser.urlencoded({ extended: true }));
+
+	this.RestApi.use(function(req, res, next) {
+		res.header("Access-Control-Allow-Origin", "*");
+		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+		next();
+	});
 	
 	this.RestApiServer = this.RestApi.listen(this.RestAPIPort, function () {
 		console.log(self.ModuleName, "RESTApi running on port", self.RestApiServer.address().port);

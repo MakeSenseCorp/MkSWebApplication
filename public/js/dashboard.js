@@ -54,6 +54,18 @@ function onGetNodeSensorInfo (data) {
 		]
 	};
 	api.SetNodeSensorsInfo("ac6de837-7863-72a9-c789-a0aae7e9d310", payload);
+
+	payload = {
+		ui_type: "node_config",
+		file_name: "config.js"
+	};
+	api.GetFileContent("ac6de837-7863-72a9-c789-a0aae7e9d310", payload);
+
+	payload = {
+		ui_type: "node_config",
+		file_name: "config.html"
+	};
+	api.GetFileContent("ac6de837-7863-72a9-c789-a0aae7e9d310", payload);
 }
 
 function onSetNodeSensorInfo (data) {
@@ -62,6 +74,10 @@ function onSetNodeSensorInfo (data) {
 
 function onGatewayDataArrived (data) {
 	console.log("onGatewayDataArrived", data);
+}
+
+function onGetFile (data) {
+	console.log("onGetFile", data);
 }
 
 function onGatewayConnected () {
@@ -97,6 +113,7 @@ $(document).ready(function() {
 	api.Gateway.OnSetNodeSensorInfoCallback		= onSetNodeSensorInfo;
 	api.Gateway.OnGatewayDataArrivedCallback 	= onGatewayDataArrived;
 	api.Gateway.OnGatewayConnectedCallback 		= onGatewayConnected;
+	api.Gateway.OnGetFileCallback 				= onGetFile;
 	// Update callback table with registered event.
 	api.Gateway.UpdateCallbackTable();
 });
