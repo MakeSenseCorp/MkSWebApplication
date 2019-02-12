@@ -56,14 +56,16 @@ function onGetNodeSensorInfo (data) {
 	api.SetNodeSensorsInfo("ac6de837-7863-72a9-c789-a0aae7e9d310", payload);
 
 	payload = {
-		ui_type: "node_config",
-		file_name: "config.js"
+		ui_type: "config",
+		file_name: "",
+		file_type: "html"
 	};
 	api.GetFileContent("ac6de837-7863-72a9-c789-a0aae7e9d310", payload);
 
 	payload = {
-		ui_type: "node_config",
-		file_name: "config.html"
+		ui_type: "config",
+		file_name: "",
+		file_type: "js"
 	};
 	api.GetFileContent("ac6de837-7863-72a9-c789-a0aae7e9d310", payload);
 }
@@ -76,8 +78,18 @@ function onGatewayDataArrived (data) {
 	console.log("onGatewayDataArrived", data);
 }
 
+function hex2a(hexx) {
+    var hex = hexx.toString();//force conversion
+    var str = '';
+    for (var i = 0; (i < hex.length && hex.substr(i, 2) !== '00'); i += 2)
+        str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    return str;
+}
+
 function onGetFile (data) {
 	console.log("onGetFile", data);
+	jsonData = JSON.parse(data.data.payload);
+	console.log(hex2a(jsonData.content));
 }
 
 function onGatewayConnected () {
