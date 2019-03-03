@@ -84,8 +84,14 @@ MkSGateway.prototype.InitRouter = function (server) {
 		console.log(self.ModuleName, "/api/get/app/connections");
 		var connections = [];
 		for (var key in self.ApplicationList) {
-			var item = self.ApplicationList[key];
-			connections.push({uuid:item.Key});
+			var sessions = self.ApplicationList[key];
+			if (undefined !== sessions) {
+				for (idx = 0; idx < sessions.length; idx++) {
+					session = sessions[idx];
+					session.Socket.send(JSON.stringify(jsonData));
+					connections.push({uuid:session.Key});
+				}
+			}
 		}
 		res.json({error:"none", data:connections});
 	});
@@ -103,10 +109,14 @@ MkSGateway.prototype.InitRouter = function (server) {
 
 MkSGateway.prototype.FindSessionBySocket = function (socket) {
 	for (var key in this.ApplicationList) {
-		var session = this.ApplicationList[key];
-		console.log(socket, session.Socket);
-		if (socket == session.Socket)
-			return session;
+		var sessions = this.ApplicationList[key];
+		if (undefined !== sessions) {
+			for (idx = 0; idx < sessions.length; idx++) {
+				session = sessions[idx];
+				if (socket == session.Socket)
+					return session;
+			}
+		}
 	}
 	
 	return null;
@@ -170,7 +180,14 @@ MkSGateway.prototype.Start = function () {
 				if ("HANDSHAKE" == jsonData.header.message_type) {
 					console.log(self.ModuleName, (new Date()), "Register new application session:", jsonData.key);
 					request.httpRequest.headers.UserKey = jsonData.key;
-					self.ApplicationList[jsonData.key] = new ApplicationSession(jsonData.key, connection);
+					
+					var userSessionList = self.ApplicationList[jsonData.key];
+					if (undefined === userSessionList) {
+						userSessionList = []
+					}
+					
+					userSessionList.push(new ApplicationSession(jsonData.key, connection));
+					self.ApplicationList[jsonData.key] = userSessionList;
 				} else {
 					var destination = jsonData.header.destination;
 					switch(jsonData.header.message_type) {
@@ -204,7 +221,17 @@ MkSGateway.prototype.Start = function () {
 		connection.on('close', function(connection) {
 			// Remove application session
 			console.log (self.ModuleName, (new Date()), "Unregister application session:", request.httpRequest.headers.UserKey);
-			delete self.ApplicationList[request.httpRequest.headers.UserKey];
+			var sessions = self.ApplicationList[request.httpRequest.headers.UserKey];
+			if (undefined !== sessions) {
+				for (idx = 0; idx < sessions.length; idx++) {
+					session = sessions[idx];
+					if (session.Socket == connection) {
+						sessions.splice(idx, 1);
+						self.ApplicationList[request.httpRequest.headers.UserKey] = sessions;
+						continue;
+					}
+				}
+			}
 			// Removing connection from the list.
 			self.WSApplicationClients.splice(wsHandle, 1); // Consider to remove this list, we have a connections map.
 		});
@@ -266,9 +293,12 @@ MkSGateway.prototype.Start = function () {
 													node.Socket.send(JSON.stringify(jsonData));
 												} else {
 													if ("WEBFACE" == destination) {
-														var session = self.ApplicationList[jsonData.user.key];
-														if (undefined != session) {
-															session.Socket.send(JSON.stringify(jsonData));
+														var sessions = self.ApplicationList[jsonData.user.key];
+														if (undefined !== sessions) {
+															for (idx = 0; idx < sessions.length; idx++) {
+																session = sessions[idx];
+																session.Socket.send(JSON.stringify(jsonData));
+															}
 														}
 													} else if ("GATEWAY" == destination) {
 														console.log("\n", self.ModuleName, "PAY ATTENTION - SOMEONE SENT MESSAGE TO GATEWAY\n");
