@@ -39,6 +39,7 @@ MkSDatabase.prototype.InitUuidDatabase = function () {
 		self.UuidDB.run("CREATE TABLE IF NOT EXISTS `tbl_uuids` (" +
 				"`id`					INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT," +
 				"`uuid`					VARCHAR(128) NOT NULL," +
+				"`type`                	INTEGER," +
 				"`user_id`				INTEGER NOT NULL," +
 				"`is_valid`        		TINYINT NOT NULL," +
 				"`created_timestamp`	INTEGER NOT NULL," +

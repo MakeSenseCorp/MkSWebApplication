@@ -56,6 +56,9 @@ function MkSGateway (gatewayInfo) {
 	this.NodeList				= {}; // Key is node uuid
 	this.ApplicationList		= {}; // Key is user key
 	
+	// Monitoring
+	this.KeepaliveMonitor	= 0;
+	
 	this.RestApi.use(bodyParser.json());
 	this.RestApi.use(bodyParser.urlencoded({ extended: true }));
 
@@ -69,6 +72,9 @@ function MkSGateway (gatewayInfo) {
 		console.log(self.ModuleName, "RESTApi running on port", self.RestApiServer.address().port);
 	});
 	this.InitRouter(this.RestApi);
+	
+	// Each 10 minutes send keepalive packet
+	this.KeepaliveMonitor = setInterval(this.KeepAliveMonitorHandler.bind(this), 10 * 60 * 100);
 	
 	return this;
 }
@@ -128,6 +134,118 @@ MkSGateway.prototype.GetConnectionsApplicationList = function () {
 	
 MkSGateway.prototype.GetConnectionsNodeList = function () {
 	console.log(this.ModuleName, "GetConnectionsNodeList");
+}
+
+MkSGateway.prototype.KeepAliveMonitorHandler = function () {
+	console.log(this.ModuleName, "KeepAliveMonitorHandler");
+	this.SendKeepAliveEvent();
+}
+
+MkSGateway.prototype.SendNodeRegistrationEvent = function (uuid, type) {
+	var packet = {
+		header: {
+			message_type: "DIRECT",
+			destination: "WEBFACE",
+			source: "GATEWAY"
+		},
+		data: {
+			header: {
+				command: "node_registered",
+				timestamp: 0
+			},
+			payload: {
+				uuid: uuid,
+				type: type
+			}
+		},
+		user: {
+			key: { }
+		},
+		additional: { },
+		piggybag: {
+			identifier: 0
+		}
+	}
+	
+	for (key in this.ApplicationList) {
+		var sessions = this.ApplicationList[key];
+		if (undefined !== sessions) {
+			for (idx = 0; idx < sessions.length; idx++) {
+				session = sessions[idx];
+				session.Socket.send(JSON.stringify(packet));
+			}
+		}
+	}
+}
+
+MkSGateway.prototype.SendNodeUnRegistrationEvent = function (uuid) {
+	var packet = {
+		header: {
+			message_type: "DIRECT",
+			destination: "WEBFACE",
+			source: "GATEWAY"
+		},
+		data: {
+			header: {
+				command: "node_unregistered",
+				timestamp: 0
+			},
+			payload: {
+				uuid: uuid
+			}
+		},
+		user: {
+			key: { }
+		},
+		additional: { },
+		piggybag: {
+			identifier: 0
+		}
+	}
+	
+	for (key in this.ApplicationList) {
+		var sessions = this.ApplicationList[key];
+		if (undefined !== sessions) {
+			for (idx = 0; idx < sessions.length; idx++) {
+				session = sessions[idx];
+				session.Socket.send(JSON.stringify(packet));
+			}
+		}
+	}
+}
+
+MkSGateway.prototype.SendKeepAliveEvent = function (uuid) {
+	var packet = {
+		header: {
+			message_type: "DIRECT",
+			destination: "WEBFACE",
+			source: "GATEWAY"
+		},
+		data: {
+			header: {
+				command: "gateway_keepalive",
+				timestamp: 0
+			},
+			payload: { }
+		},
+		user: {
+			key: { }
+		},
+		additional: { },
+		piggybag: {
+			identifier: 0
+		}
+	}
+	
+	for (key in this.ApplicationList) {
+		var sessions = this.ApplicationList[key];
+		if (undefined !== sessions) {
+			for (idx = 0; idx < sessions.length; idx++) {
+				session = sessions[idx];
+				session.Socket.send(JSON.stringify(packet));
+			}
+		}
+	}
 }
 
 MkSGateway.prototype.Start = function () {
@@ -268,6 +386,10 @@ MkSGateway.prototype.Start = function () {
 						var wsHandle = self.WSNodeClients.push(connection) - 1;
 						// Storing node connection into map.
 						self.NodeList[request.httpRequest.headers.uuid] = new Connection(request.httpRequest.headers.uuid, connection);
+						
+						// Send event to all application instances about this node.
+						self.SendNodeRegistrationEvent(request.httpRequest.headers.uuid, request.httpRequest.headers.node_type);
+						
 						connection.on('message', function(message) {
 							if (message.type === 'utf8') {
 								connection.LastMessageData = message.utf8Data;
@@ -333,10 +455,14 @@ MkSGateway.prototype.Start = function () {
 													case "node_connected":
 														console.log(self.ModuleName, (new Date()), "Register node:", payload.node.uuid);
 														self.NodeList[payload.node.uuid] = new Connection(payload.node.uuid, master.Socket);
+														// Send event to all application instances about this node.
+														self.SendNodeRegistrationEvent(payload.node.uuid, payload.node.type);
 													break;
 													case "node_disconnected":
 														console.log (self.ModuleName, (new Date()), "Unregister node:", payload.node.uuid);
 														self.NodeList[payload.node.uuid].CleanSubscribers();
+														// Send event to all application instances about this node.
+														self.SendNodeUnRegistrationEvent(payload.node.uuid);
 														delete self.NodeList[payload.node.uuid];
 													break;
 												}
@@ -350,9 +476,15 @@ MkSGateway.prototype.Start = function () {
 						});
 						connection.on('close', function(connection) {
 							console.log (self.ModuleName, (new Date()), "Unregister node:", request.httpRequest.headers.uuid);
+							// Send event to all application instances about this node.
+							self.SendNodeUnRegistrationEvent(request.httpRequest.headers.uuid);
 							// TODO - Delete all nodes connection related to this master
-							self.NodeList[request.httpRequest.headers.uuid].CleanSubscribers();
-							delete self.NodeList[request.httpRequest.headers.uuid];
+							if (self.NodeList[request.httpRequest.headers.uuid] !== undefined) {
+								self.NodeList[request.httpRequest.headers.uuid].CleanSubscribers();
+								delete self.NodeList[request.httpRequest.headers.uuid];
+							} else {
+								console.log (self.ModuleName, (new Date()), "ERROR unregistering Node:", request.httpRequest.headers.uuid);
+							}
 							// Removing connection from the list.
 							self.WSNodeClients.splice(wsHandle, 1); // Consider to remove this list, we have a connections map.
 						});
@@ -372,4 +504,3 @@ function GatewayFactory () {
 }
 
 module.exports = GatewayFactory;
-
