@@ -74,7 +74,7 @@ function MkSGateway (gatewayInfo) {
 	this.InitRouter(this.RestApi);
 	
 	// Each 10 minutes send keepalive packet
-	this.KeepaliveMonitor = setInterval(this.KeepAliveMonitorHandler.bind(this), 10 * 60 * 100);
+	this.KeepaliveMonitor = setInterval(this.KeepAliveMonitorHandler.bind(this), 10 * 60 * 1000);
 	
 	return this;
 }
@@ -460,10 +460,12 @@ MkSGateway.prototype.Start = function () {
 													break;
 													case "node_disconnected":
 														console.log (self.ModuleName, (new Date()), "Unregister node:", payload.node.uuid);
-														self.NodeList[payload.node.uuid].CleanSubscribers();
-														// Send event to all application instances about this node.
-														self.SendNodeUnRegistrationEvent(payload.node.uuid);
-														delete self.NodeList[payload.node.uuid];
+														if (self.NodeList[request.httpRequest.headers.uuid] !== undefined) {
+															self.NodeList[request.httpRequest.headers.uuid].CleanSubscribers();
+															// Send event to all application instances about this node.
+															self.SendNodeUnRegistrationEvent(payload.node.uuid);
+															delete self.NodeList[payload.node.uuid];
+														}
 													break;
 												}
 											}
