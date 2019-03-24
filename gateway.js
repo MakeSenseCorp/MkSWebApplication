@@ -359,6 +359,7 @@ MkSGateway.prototype.Start = function () {
 	this.WSNode.on('request', function(request) {
 		// Accept new connection request
 		var connection = request.accept(null, request.origin);
+		console.log(self.ModuleName, "Accept new connection");
 		
 		// Node must provide UUID on connection request.
 		if (request.httpRequest.headers.uuid == undefined || request.httpRequest.headers.uuid == "") {
@@ -454,9 +455,11 @@ MkSGateway.prototype.Start = function () {
 												switch(jsonData.data.header.command) {
 													case "node_connected":
 														console.log(self.ModuleName, (new Date()), "Register node:", payload.node.uuid);
-														self.NodeList[payload.node.uuid] = new Connection(payload.node.uuid, master.Socket);
-														// Send event to all application instances about this node.
-														self.SendNodeRegistrationEvent(payload.node.uuid, payload.node.type);
+														if (master) {
+															self.NodeList[payload.node.uuid] = new Connection(payload.node.uuid, master.Socket);
+															// Send event to all application instances about this node.
+															self.SendNodeRegistrationEvent(payload.node.uuid, payload.node.type);
+														}
 													break;
 													case "node_disconnected":
 														console.log (self.ModuleName, (new Date()), "Unregister node:", payload.node.uuid);
@@ -495,6 +498,7 @@ MkSGateway.prototype.Start = function () {
 					}
 				});
 			} else {
+				console.log (self.ModuleName, (new Date()), "ERROR Node is not in DB:", request.httpRequest.headers.uuid); 
 				return;
 			}
 		});
