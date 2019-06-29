@@ -1,0 +1,77 @@
+<div id="[DEVICE_UUID]">
+	<div class="panel panel-primary">
+		<div class="panel-body">
+            <ul class="chat">
+                <li class="left clearfix">
+                    <span class="chat-img pull-left">
+                        <img width="50px" id="[DEVICE_UUID]-node-icon"  src="" class="img-circle" />
+                    </span>
+                    <div class="chat-body clearfix">
+                        <div class="header">
+                            <strong id="[DEVICE_UUID]-node-name" class="primary-font"></strong>
+                            <small class="pull-right text-muted">
+                                <i class="fa fa-clock-o fa-fw"></i> 12 mins ago
+                            </small>
+                        </div>
+                        <p id="[DEVICE_UUID]-node-description"></p>
+                        <div class="text-right">
+							<a href="#" onClick="OpenInfoModalWindow_Device_999('[DEVICE_UUID]');">Options<a/>
+						</div>
+                    </div>
+                </li>
+               	<span class="pull-left" id="[DEVICE_UUID]-status-external"></span>
+            </ul>
+        </div>
+	</div>
+</div>
+<div class="modal fade" id="[DEVICE_UUID]-modal" tabindex="-1" role="dialog" aria-labelledby="[DEVICE_UUID]-info-modal-label" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<h4 class="modal-title" id="[DEVICE_UUID]-info-modal-label">Options</h4>
+			</div>
+			<div class="modal-body" id="infoContent">
+				<div class="panel-body">
+					<div class="panel panel-default">
+						<div class="panel-body">
+							<form role="form">
+								<fieldset>
+									<fieldset disabled>
+										<div class="form-group">
+											<input id="[DEVICE_UUID]-modal-node-name" class="form-control" placeholder="Device Name" name="devicename" type="devicename" value="">
+										</div>
+									</fieldset>
+									<fieldset disabled>
+										<div class="form-group">
+											<input id="[DEVICE_UUID]-modal-node-description" class="form-control" placeholder="Device Description" name="devicedescription" type="devicedescription" value="">
+										</div>
+									</fieldset>
+									<fieldset disabled>
+										<div class="form-group">
+											<label>UUID</label>
+											<input id="[DEVICE_UUID]-modal-node-uuid" class="form-control" placeholder="Device UUID" name="deviceuuid" type="deviceuuid" value="[DEVICE_UUID]">
+										</div>
+									</fieldset>
+								</fieldset>
+							</form>
+							<form role="form">
+								<fieldset>
+									<div class="table-responsive">
+										<table class="table table-hover"><thead><tr><th>#</th><th>Type</th><th>Name</th><th><div style="text-align:center">Value/Action</div></th></tr></thead>
+											<tbody id="[DEVICE_UUID]-modal-node-sensors"">
+											</tbody>
+										</table>
+									</div>
+									<div class="form-group">
+										<button type="button" class="btn btn-primary pull-right" onClick="">Close</button>
+									</div>
+								</fieldset>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

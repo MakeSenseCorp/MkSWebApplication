@@ -383,6 +383,11 @@ MkSGateway.prototype.Start = function () {
 			if (status) {
 				self.Database.IsUserKeyExist(request.httpRequest.headers.key, function (status, data) {
 					if (status) {
+						mksConnection = self.NodeList[request.httpRequest.headers.uuid];
+						if (mksConnection !== undefined) {
+							return;
+						}
+
 						console.log(self.ModuleName, (new Date()), "Register node:", request.httpRequest.headers.uuid);
 						var wsHandle = self.WSNodeClients.push(connection) - 1;
 						// Storing node connection into map.
