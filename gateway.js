@@ -414,6 +414,40 @@ MkSGateway.prototype.Start = function () {
 													case 'ping':
 														console.log("\n", self.ModuleName, "PING from", jsonData.header.source, "\n");
 													break;
+													case 'nodes_list':
+														console.log("\n", self.ModuleName, "NODES LIST to", jsonData.header.source, "\n");
+														var uuids = [];
+														for (var key in self.NodeList) {
+															var item = self.NodeList[key];
+															uuids.push(item.UUID);
+														}
+														
+														var node = self.NodeList[source];
+														message = {
+															header: {
+																message_type: "DIRECT",
+																destination: source,
+																source: "GATEWAY"
+															},
+															data: {
+																header: {
+																	command: "nodes_list",
+																	timestamp: new Date()
+																},
+																payload: uuids
+															},
+															user: {
+																key: ""
+															},
+															additional: "",
+															piggybag: {
+																identifier: 0
+															}
+														}
+
+														console.log(message);
+														node.Socket.send(JSON.stringify(message));
+													break;
 												}
 											} else {
 												var node = self.NodeList[destination];
