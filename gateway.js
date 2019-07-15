@@ -427,7 +427,8 @@ MkSGateway.prototype.Start = function () {
 															header: {
 																message_type: "DIRECT",
 																destination: source,
-																source: "GATEWAY"
+																source: "GATEWAY",
+																direction: "response"
 															},
 															data: {
 																header: {
@@ -451,6 +452,7 @@ MkSGateway.prototype.Start = function () {
 												}
 											} else {
 												var node = self.NodeList[destination];
+												console.log("\n", self.ModuleName, destination);
 												if (undefined != node) {
 													node.Socket.send(JSON.stringify(jsonData));
 												} else {
