@@ -25,6 +25,8 @@ var webface = new Webface(WebfaceInfo);
 
 // Set webface with database instance (object base sharing)
 webface.SetDatabaseInstance(database);
+// Set webface with gateway instance
+webface.SetGatewayInstance(gateway);
 // Set gateway with database instance (object base sharing)
 gateway.SetDatabaseInstance(database);
 // Start gateway

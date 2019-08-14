@@ -59,6 +59,19 @@ MkSWebface.prototype.InitRouter = function (server) {
 				if (!error) {
 					res.json({error:"sql error", nodes:""});
 				} else {
+					for (var key in self.Gateway.NodeList) {
+						if (self.Gateway.NodeList.hasOwnProperty(key)) {
+							node = self.Gateway.NodeList[key];
+							for (i = 0; i < data.data.length; i++) {
+								var item = data.data[i];
+								if (item.uuid == node.UUID) {
+									item.name = node.Node.name;
+									break;
+								}
+							}
+						}
+					}
+					// console.log(self.Gateway.NodeList);
 					res.json({error:"none", nodes:data});
 				}
 			});

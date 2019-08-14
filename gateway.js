@@ -9,6 +9,10 @@ function Connection (uuid, sock) {
 	
 	this.Socket 		= sock;
 	this.UUID 			= uuid;
+	this.Node 			= {
+		type: 0,
+		name: ""
+	};
 	this.Subscribers 	= [];
 
 	this.AddSubscriber = function (uuid) {
@@ -390,8 +394,12 @@ MkSGateway.prototype.Start = function () {
 
 						console.log(self.ModuleName, (new Date()), "Register node:", request.httpRequest.headers.uuid);
 						var wsHandle = self.WSNodeClients.push(connection) - 1;
-						// Storing node connection into map.
-						self.NodeList[request.httpRequest.headers.uuid] = new Connection(request.httpRequest.headers.uuid, connection);
+						// Storing node connection into map. (MASTER/ADMIN connection request)
+						var nodeConn = new Connection(request.httpRequest.headers.uuid, connection);
+						payloadJson = JSON.parse(request.httpRequest.headers.payload);
+						nodeConn.Node.type = payloadJson.node_type;
+						nodeConn.Node.name = payloadJson.node_name;
+						self.NodeList[request.httpRequest.headers.uuid] = nodeConn;
 						
 						// Send event to all application instances about this node.
 						self.SendNodeRegistrationEvent(request.httpRequest.headers.uuid, request.httpRequest.headers.node_type);
@@ -497,7 +505,10 @@ MkSGateway.prototype.Start = function () {
 													case "node_connected":
 														console.log(self.ModuleName, (new Date()), "Register node:", payload.node.uuid);
 														if (master) {
-															self.NodeList[payload.node.uuid] = new Connection(payload.node.uuid, master.Socket);
+															var nodeConn = new Connection(payload.node.uuid, master.Socket);
+															nodeConn.Node.type = payload.node.type;
+															nodeConn.Node.name = payload.node.name;
+															self.NodeList[payload.node.uuid] = nodeConn;
 															// Send event to all application instances about this node.
 															self.SendNodeRegistrationEvent(payload.node.uuid, payload.node.type);
 														}
