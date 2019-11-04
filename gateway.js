@@ -497,6 +497,11 @@ MkSGateway.prototype.Start = function () {
 										case "CUSTOM":
 										break;
 										case "MASTER":
+											/*
+											* TODO:
+												1. Monitor for connections (maybe some keepalive packet monitoring). If connection
+												not responding for a while close connection and delete.
+											*/
 											if ("GATEWAY" == destination) {
 												var master 	= self.NodeList[source];
 												var payload = jsonData.data.payload;
