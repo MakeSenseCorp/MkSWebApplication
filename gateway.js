@@ -59,6 +59,7 @@ function MkSGateway (gatewayInfo) {
 	this.Database 				= null;
 	this.NodeList				= {}; // Key is node uuid
 	this.ApplicationList		= {}; // Key is user key
+	this.UniqueIdIndexer 		= 0;
 	
 	// Monitoring
 	this.KeepaliveMonitor	= 0;
@@ -291,6 +292,9 @@ MkSGateway.prototype.Start = function () {
 		// Accept new connection request
 		var connection = request.accept('echo-protocol', request.origin);
 		var wsHandle = self.WSApplicationClients.push(connection) - 1;
+
+		self.UniqueIdIndexer += 1;
+		connection.UniqueId = self.UniqueIdIndexer;
 		
 		connection.on('message', function(message) {
 			if (message.type === 'utf8') {
@@ -307,7 +311,7 @@ MkSGateway.prototype.Start = function () {
 					if (undefined === userSessionList) {
 						userSessionList = []
 					}
-					
+
 					userSessionList.push(new ApplicationSession(jsonData.key, connection));
 					self.ApplicationList[jsonData.key] = userSessionList;
 				} else {
@@ -316,6 +320,7 @@ MkSGateway.prototype.Start = function () {
 						case "DIRECT":
 							var node = self.NodeList[destination];
 							if (undefined != node) {
+								jsonData.piggybag.webface_indexer = connection.UniqueId;
 								node.Socket.send(JSON.stringify(jsonData));
 							}
 						break;
@@ -340,7 +345,7 @@ MkSGateway.prototype.Start = function () {
 			}
 		});
 		
-		connection.on('close', function(connection) {
+		connection.on('close', function(conn) {
 			// Remove application session
 			console.log (self.ModuleName, (new Date()), "Unregister application session:", request.httpRequest.headers.UserKey);
 			var sessions = self.ApplicationList[request.httpRequest.headers.UserKey];
@@ -348,6 +353,36 @@ MkSGateway.prototype.Start = function () {
 				for (idx = 0; idx < sessions.length; idx++) {
 					session = sessions[idx];
 					if (session.Socket == connection) {
+						// Send messages to nodes about this disconnection
+						for (var key in self.NodeList) {
+							var item = self.NodeList[key];
+							var packet = {
+								header: {
+									message_type: "DIRECT",
+									destination: item.UUID,
+									source: "GATEWAY",
+									direction: "request"
+								},
+								data: {
+									header: {
+										command: "unregister_on_node_change",
+										timestamp: 0
+									},
+									payload: {
+										'webface_indexer': connection.UniqueId,
+										"item_type": 2
+									}
+								},
+								user: {
+									key: { }
+								},
+								additional: { },
+								piggybag: {
+									identifier: 0
+								}
+							}
+							item.Socket.send(JSON.stringify(packet));
+						}
 						sessions.splice(idx, 1);
 						self.ApplicationList[request.httpRequest.headers.UserKey] = sessions;
 						continue;
@@ -467,9 +502,44 @@ MkSGateway.prototype.Start = function () {
 													if ("WEBFACE" == destination) {
 														var sessions = self.ApplicationList[jsonData.user.key];
 														if (undefined !== sessions) {
+															var sessionFound = false;
 															for (idx = 0; idx < sessions.length; idx++) {
 																session = sessions[idx];
-																session.Socket.send(JSON.stringify(jsonData));
+																if (session.Socket.UniqueId == jsonData.piggybag.webface_indexer) {
+																	session.Socket.send(JSON.stringify(jsonData));
+																	sessionFound = true;
+																	continue;
+																}
+															}
+
+															if (sessionFound == false) {
+																// Send session disconnected packet
+																var packet = {
+																	header: {
+																		message_type: "DIRECT",
+																		destination: jsonData.header.source,
+																		source: "GATEWAY",
+																		direction: "request"
+																	},
+																	data: {
+																		header: {
+																			command: "unregister_on_node_change",
+																			timestamp: 0
+																		},
+																		payload: {
+																			'webface_indexer': jsonData.piggybag.webface_indexer,
+																			"item_type": 2
+																		}
+																	},
+																	user: {
+																		key: { }
+																	},
+																	additional: { },
+																	piggybag: {
+																		identifier: 0
+																	}
+																}
+																connection.send(JSON.stringify(packet));
 															}
 														}
 													} else if ("GATEWAY" == destination) {
