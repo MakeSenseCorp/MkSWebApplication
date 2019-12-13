@@ -321,6 +321,7 @@ MkSGateway.prototype.Start = function () {
 							var node = self.NodeList[destination];
 							if (undefined != node) {
 								jsonData.piggybag.webface_indexer = connection.UniqueId;
+								jsonData.additional.pipe = "GATEWAY";
 								node.Socket.send(JSON.stringify(jsonData));
 							}
 						break;
