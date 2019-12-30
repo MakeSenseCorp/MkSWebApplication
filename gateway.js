@@ -377,7 +377,9 @@ MkSGateway.prototype.Start = function () {
 								user: {
 									key: { }
 								},
-								additional: { },
+								additional: {
+									pipe: "GATEWAY"
+								 },
 								piggybag: {
 									identifier: 0
 								}
@@ -535,7 +537,9 @@ MkSGateway.prototype.Start = function () {
 																	user: {
 																		key: { }
 																	},
-																	additional: { },
+																	additional: {
+																		pipe: "GATEWAY"
+																	},
 																	piggybag: {
 																		identifier: 0
 																	}

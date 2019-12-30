@@ -1,23 +1,23 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "842b0d02631a5aa1e13c7834a79d62ec",
+    "revision": "5e26f46d6ac445b28261de65510aff10",
     "url": "/index.html"
   },
   {
-    "revision": "b13ded1eefd030b51064",
-    "url": "/static/css/main.52aa33c9.chunk.css"
+    "revision": "aafbb935864bdd395393",
+    "url": "/static/css/main.09d993f2.chunk.css"
   },
   {
-    "revision": "95195664293197c9e537",
-    "url": "/static/js/2.532670e8.chunk.js"
+    "revision": "0bdc5045cc126dfff467",
+    "url": "/static/js/2.021fb2b4.chunk.js"
   },
   {
-    "revision": "b13ded1eefd030b51064",
-    "url": "/static/js/main.7e2f5bff.chunk.js"
+    "revision": "aafbb935864bdd395393",
+    "url": "/static/js/main.de9e3d4b.chunk.js"
   },
   {
-    "revision": "42ac5946195a7306e2a5",
-    "url": "/static/js/runtime~main.a8a9905a.js"
+    "revision": "4fa5f75658377ddb9316",
+    "url": "/static/js/runtime-main.1991d113.js"
   },
   {
     "revision": "1356004021c35e279adc37c22f66a619",
@@ -42,6 +42,10 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "c8ffdeb3144d5055756ef01ef98e8486",
     "url": "/static/media/OpenSans-Regular-webfont.c8ffdeb3.woff"
+  },
+  {
+    "revision": "c44032c431be9997d97d4da666760f19",
+    "url": "/static/media/captain-sparrow.c44032c4.jpg"
   },
   {
     "revision": "5d5d9eefa31e5e13a6610d9fa7a283bb",
