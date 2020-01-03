@@ -3,6 +3,7 @@ var express     	= require('express');
 var bodyParser  	= require('body-parser')
 var http            = require('http');
 var path        	= require('path');
+var os        		= require('os');
 
 function MkSWebface (webfaceInfo) {
 	var self = this;
@@ -22,6 +23,8 @@ function MkSWebface (webfaceInfo) {
 		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
 		next();
 	});
+
+	console.log(os.networkInterfaces());
 	
 	this.RestApi.use(express.static(path.join(__dirname, 'public')));
 	this.RestApiServer = this.RestApi.listen(this.RestAPIPort, function () {
