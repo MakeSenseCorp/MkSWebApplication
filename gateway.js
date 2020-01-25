@@ -556,13 +556,22 @@ MkSGateway.prototype.Start = function () {
 										case "PRIVATE":
 										break;
 										case "BROADCAST":
+												console.log("\n", self.ModuleName, "BROADCAST message recieved\n");
 											// Send to all nodes.
-											for (key in self.NodesList) {
-												self.NodesList[key].Socket.send(JSON.stringify(jsonData));
+											for (key in self.NodeList) {
+												jsonData.header.destination = key;
+												self.NodeList[key].Socket.send(JSON.stringify(jsonData));
 											}
 											
-											for (key in self.ApplicationList) {
-												self.ApplicationList[key].Socket.send(JSON.stringify(jsonData));
+											// Send to all application sessions.
+											for (key in this.ApplicationList) {
+												var sessions = this.ApplicationList[key];
+												if (undefined !== sessions) {
+													for (idx = 0; idx < sessions.length; idx++) {
+														session = sessions[idx];
+														session.Socket.send(JSON.stringify(jsonData));
+													}
+												}
 											}
 										break;
 										case "GROUP":
