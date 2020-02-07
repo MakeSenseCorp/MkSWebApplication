@@ -2,6 +2,7 @@
 var express     	= require('express');
 var bodyParser  	= require('body-parser')
 var WebSocketServer = require('websocket').server;
+var WebSocketCloud  = require('websocket').client;
 var http            = require('http');
 
 function Connection (uuid, sock) {
@@ -60,6 +61,8 @@ function MkSGateway (gatewayInfo) {
 	this.NodeList				= {}; // Key is node uuid
 	this.ApplicationList		= {}; // Key is user key
 	this.UniqueIdIndexer 		= 0;
+
+	this.Client 				= new WebSocketCloud();
 	
 	// Monitoring
 	this.KeepaliveMonitor	= 0;
@@ -255,6 +258,61 @@ MkSGateway.prototype.SendKeepAliveEvent = function (uuid) {
 
 MkSGateway.prototype.Start = function () {
 	var self = this;
+
+	this.Client.on('connectFailed', function(error) {
+		console.log('Connect Error: ' + error.toString());
+	});
+
+	this.Client.on('connect', function(connection) {
+		console.log('WebSocket Client Connected');
+		connection.on('error', function(error) {
+			console.log("Connection Error: " + error.toString());
+		});
+		connection.on('close', function() {
+			console.log('echo-protocol Connection Closed');
+		});
+		connection.on('message', function(message) {
+			if (message.type === 'utf8') {
+				console.log("Received: '" + message.utf8Data + "'");
+			}
+		});
+		
+		function sendNumber() {
+			if (connection.connected) {
+				var number = Math.round(Math.random() * 0xFFFFFF);
+				var packet = {
+					header: {
+						message_type: "HANDSHAKE",
+						destination: "CLOUD",
+						source: "GATEWAY",
+						direction: "request"
+					},
+					data: {
+						header: {
+							command: "",
+							timestamp: 0
+						},
+						payload: {
+							'rand_number': number
+						}
+					},
+					user: {
+						key: { }
+					},
+					piggybag: {
+						identifier: 0
+					}
+				}
+				connection.sendUTF(JSON.stringify(packet));
+				setTimeout(sendNumber, 1000);
+			}
+		}
+		sendNumber();
+	});
+	 
+	this.Client.connect('ws://10.0.0.10:2000/', 'echo-protocol', "10.0.0.10", {
+		UserKey: "ac6de837-7863-72a9-c789-a0aae7e9d93e"
+	});
 	
 	// Create listener server
 	this.ServerNode = http.createServer(function(request, response) {
@@ -447,8 +505,7 @@ MkSGateway.prototype.Start = function () {
 								connection.LastMessageData = message.utf8Data;
 								jsonData = JSON.parse(message.utf8Data);
 								
-								console.log("\n", self.ModuleName, "Node -> Application", jsonData, "\n");
-								
+								console.log("\n", self.ModuleName, "Node -> Application", jsonData, "\n");								
 								if ("HANDSHAKE" == jsonData.header.message_type) {
 								} else {
 									var destination = jsonData.header.destination;

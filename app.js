@@ -1,5 +1,5 @@
 const Gateway 	= require('./gateway.js')();
-const Database 	= require('./database.js')();
+const Database 	= require('./dblite.js')();
 const Webface 	= require('./webface.js')();
 
 // Params for webface instance
