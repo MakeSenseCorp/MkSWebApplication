@@ -1,0 +1,48 @@
+{
+    "db": {
+        "users": [
+            {
+                "id": 1,
+                "key": "ac6de837-7863-72a9-c789-a0aae7e9d93e",
+                "user_name": "makesense",
+                "password": "1234",
+                "email": "makesense@gmail.com",
+                "ts": 1,
+                "last_login_ts": 1,
+                "enabled": 1
+            }
+        ],
+        "uuids": [
+            {
+                "id": 1,
+                "uuid":"ac6de837-9863-72a9-c789-a0aae7e9d020",
+                "type":1,
+                "user_id": 1,
+                "is_valid": 1,
+                "created_timestamp": 1,
+                "last_used_timestamp": 1,
+                "name": "Master"
+            },
+            {
+                "id": 2,
+                "uuid":"ac6de837-9863-72a9-c789-a0aae7e9d021",
+                "type":2017,
+                "user_id": 1,
+                "is_valid": 1,
+                "created_timestamp": 1,
+                "last_used_timestamp": 1,
+                "name": "HJT Camera Manager"
+            },
+            {
+                "id": 3,
+                "uuid":"ac6de837-9863-72a9-c789-a0aae7e9d024",
+                "type":103,
+                "user_id": 1,
+                "is_valid": 1,
+                "created_timestamp": 1,
+                "last_used_timestamp": 1,
+                "name": "IP Scanner Service"
+            }
+        ]
+    }  
+}
