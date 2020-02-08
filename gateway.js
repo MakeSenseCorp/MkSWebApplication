@@ -62,7 +62,14 @@ function MkSGateway (gatewayInfo) {
 	this.ApplicationList		= {}; // Key is user key
 	this.UniqueIdIndexer 		= 0;
 
-	this.Client 				= new WebSocketCloud();
+	this.Ticker 				= 0;
+	this.ConnectingTimeout 		= 0;
+	this.CloudSocketState 		= "DISCONNECTED";
+	this.CloudClient 			= new WebSocketCloud({
+		closeTimeout: 5000
+	});
+	this.CloudConnection 		= null;
+	this.CloudUserKey 			= "ac6de837-7863-72a9-c789-a0aae7e9d93e";
 	
 	// Monitoring
 	this.KeepaliveMonitor	= 0;
@@ -83,6 +90,9 @@ function MkSGateway (gatewayInfo) {
 	
 	// Each 10 minutes send keepalive packet
 	this.KeepaliveMonitor = setInterval(this.KeepAliveMonitorHandler.bind(this), 10 * 60 * 1000);
+
+	// Each 1 seconds state machine manager
+	this.CloudConnectionStateMachineManager = null;
 	
 	return this;
 }
@@ -147,6 +157,57 @@ MkSGateway.prototype.GetConnectionsNodeList = function () {
 MkSGateway.prototype.KeepAliveMonitorHandler = function () {
 	console.log(this.ModuleName, "KeepAliveMonitorHandler");
 	this.SendKeepAliveEvent();
+}
+
+MkSGateway.prototype.CloudConnectionStateMachineHandler = function() {
+	this.Ticker += 1;
+	// console.log(this.ModuleName, this.Ticker);
+
+	if (this.CloudSocketState == "IDLE") {
+		if (this.ConnectingTimeout && this.Ticker % this.ConnectingTimeout == 0) {
+			this.CloudSocketState = "DISCONNECTED";
+			this.ConnectingTimeout = 0;
+		}
+	} else if (this.CloudSocketState == "HANDSHAKE") {
+		var packet = {
+			header: {
+				message_type: "HANDSHAKE",
+				destination: "CLOUD",
+				source: "GATEWAY",
+				direction: "request"
+			},
+			data: {
+				header: {
+					command: "",
+					timestamp: 0
+				},
+				payload: {	}
+			},
+			user: {
+				key: this.CloudUserKey
+			},
+			piggybag: {
+				identifier: 0
+			}
+		}
+		this.CloudConnection.sendUTF(JSON.stringify(packet));
+		this.ConnectingTimeout = 5;
+		this.CloudSocketState = "CONNECTING";
+	} else if (this.CloudSocketState == "CONNECTING") {
+		if (this.ConnectingTimeout && this.Ticker % this.ConnectingTimeout == 0) {
+			this.CloudSocketState = "DISCONNECTED";
+			this.CloudConnection.close();
+			this.ConnectingTimeout = 0;
+		}
+	} else if (this.CloudSocketState == "CONNECTED") {
+	} else if (this.CloudSocketState == "DISCONNECTED") {
+		this.CloudClient.connect('ws://10.0.0.10:2000/', 'echo-protocol', "10.0.0.10", {
+			UserKey: this.CloudUserKey
+		});
+		
+		this.ConnectingTimeout = 5;
+	} else {
+	}
 }
 
 MkSGateway.prototype.SendNodeRegistrationEvent = function (uuid, type) {
@@ -259,60 +320,49 @@ MkSGateway.prototype.SendKeepAliveEvent = function (uuid) {
 MkSGateway.prototype.Start = function () {
 	var self = this;
 
-	this.Client.on('connectFailed', function(error) {
-		console.log('Connect Error: ' + error.toString());
+	this.CloudClient.on('connectFailed', function(error) {
+		console.log(self.ModuleName, "[ERROR] Connection FAILED", error.toString());
 	});
 
-	this.Client.on('connect', function(connection) {
-		console.log('WebSocket Client Connected');
+	this.CloudClient.on('connect', function(connection) {
+		console.log(self.ModuleName, "Cloud socket connected");
+		self.CloudSocketState = "HANDSHAKE";
+		self.CloudConnection = connection;
+
 		connection.on('error', function(error) {
-			console.log("Connection Error: " + error.toString());
+			console.log(self.ModuleName, "[ERROR] Cloud connection", error.toString());
 		});
 		connection.on('close', function() {
-			console.log('echo-protocol Connection Closed');
+			console.log(self.ModuleName, "Cloud connection CLOSED");
+			self.CloudSocketState = "DISCONNECTED";
 		});
 		connection.on('message', function(message) {
 			if (message.type === 'utf8') {
-				console.log("Received: '" + message.utf8Data + "'");
-			}
-		});
-		
-		function sendNumber() {
-			if (connection.connected) {
-				var number = Math.round(Math.random() * 0xFFFFFF);
-				var packet = {
-					header: {
-						message_type: "HANDSHAKE",
-						destination: "CLOUD",
-						source: "GATEWAY",
-						direction: "request"
-					},
-					data: {
-						header: {
-							command: "",
-							timestamp: 0
-						},
-						payload: {
-							'rand_number': number
-						}
-					},
-					user: {
-						key: { }
-					},
-					piggybag: {
-						identifier: 0
+				jsonData = JSON.parse(message.utf8Data);
+
+				console.log("\n", self.ModuleName, "Cloud -> Gateway", jsonData, "\n");
+				if (jsonData.header === undefined) {
+					console.log(self.ModuleName, (new Date()), "Invalid request ...");
+					return;
+				}
+
+				if (jsonData.header.message_type === undefined) {
+					console.log(self.ModuleName, (new Date()), "Invalid request ...");
+					return;
+				}
+				
+				if ("HANDSHAKE" == jsonData.header.message_type) {
+					if (jsonData.user.key == self.CloudUserKey) {
+						self.CloudSocketState  = "CONNECTED";
+						self.ConnectingTimeout = 0;
+						console.log(self.ModuleName, "Connected to cloud ...");
 					}
 				}
-				connection.sendUTF(JSON.stringify(packet));
-				setTimeout(sendNumber, 1000);
 			}
-		}
-		sendNumber();
+		});
 	});
-	 
-	this.Client.connect('ws://10.0.0.10:2000/', 'echo-protocol', "10.0.0.10", {
-		UserKey: "ac6de837-7863-72a9-c789-a0aae7e9d93e"
-	});
+
+	this.CloudConnectionStateMachineManager = setInterval(this.CloudConnectionStateMachineHandler.bind(this), 1 * 1000);
 	
 	// Create listener server
 	this.ServerNode = http.createServer(function(request, response) {
