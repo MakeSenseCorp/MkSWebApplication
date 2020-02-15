@@ -66,10 +66,46 @@ MkSDatabase.prototype.IsUuidExist = function (uuid, callback) {
     callback (false, null);
 }
 
+MkSDatabase.prototype.GetNodesByUserKey = function (user_key, callback) {
+    var self 	= this;
+    var uuids   = [];
+    var user_id = 0;
+
+    // Find user id
+    for (var index = 0; index < this.UuidDB.length; index++) {
+        if (self.UserDB[index].key == user_key) {
+            user_id = self.UserDB[index].id;
+            break;
+        }
+    }
+
+    if (0 == user_id) {
+        callback (false, null);
+        return;
+    }
+
+    for (var index = 0; index < this.UuidDB.length; index++) {
+        item = this.UuidDB[index];
+        if (item.user_id == user_id) {
+            uuids.push(item);
+        }
+    }
+
+    if (uuids.length > 0) {
+        callback (true, {
+            status: "OK", 
+            data: uuids
+        });
+        return;
+    } else {
+        callback (false, null);
+    }
+}
+
 MkSDatabase.prototype.GetNodesByUserId = function (user_id, callback) {
     var self 	= this;
+    var uuids   = []
 
-    var uuids = []
     for (var index = 0; index < this.UuidDB.length; index++) {
         item = this.UuidDB[index];
         if (item.user_id == user_id) {

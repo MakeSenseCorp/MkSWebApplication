@@ -75,7 +75,7 @@ function MkSGateway (gatewayInfo) {
 	this.CloudUserKey 			= "ac6de837-7863-72a9-c789-a0aae7e9d93e";
 	this.CloudURL 				= "10.0.0.10";
 	this.CloudPort 				= "2000";
-	this.WebfaceIndexer = []
+	this.WebfaceIndexerList 	= []
 	
 	// Monitoring
 	this.KeepaliveMonitor	= 0;
@@ -166,8 +166,12 @@ MkSGateway.prototype.KeepAliveMonitorHandler = function () {
 }
 
 MkSGateway.prototype.CloudConnectionStateMachineHandler = function() {
+	self = this;
 	this.Ticker += 1;
 	// console.log(this.ModuleName, this.Ticker);
+	var payload = {
+		nodes: []
+	};
 
 	if (this.CloudSocketState == "IDLE") {
 		if (this.ConnectingTimeout && this.Ticker % this.ConnectingTimeout == 0) {
@@ -175,30 +179,51 @@ MkSGateway.prototype.CloudConnectionStateMachineHandler = function() {
 			this.ConnectingTimeout = 0;
 		}
 	} else if (this.CloudSocketState == "HANDSHAKE") {
-		var packet = {
-			header: {
-				message_type: "HANDSHAKE",
-				destination: "CLOUD",
-				source: "GATEWAY",
-				direction: "request"
-			},
-			data: {
-				header: {
-					command: "",
-					timestamp: 0
-				},
-				payload: {	}
-			},
-			user: {
-				key: this.CloudUserKey
-			},
-			piggybag: {
-				identifier: 0
+		self.Database.GetNodesByUserKey(this.CloudUserKey, function(error, data) {
+			if (!error) {
+			} else {
+				for (i = 0; i < data.data.length; i++) {
+					var item = data.data[i];
+					for (var key in self.NodeList) {
+						if (self.NodeList.hasOwnProperty(key)) {
+							node = self.NodeList[key];
+							if (item.uuid == node.UUID) {
+								item.online = true;
+								break;
+							} else {
+								item.online = false;
+							}
+						}
+					}
+				}
+				payload.nodes = data.data;
 			}
-		}
-		this.CloudConnection.sendUTF(JSON.stringify(packet));
-		this.ConnectingTimeout = 5;
-		this.CloudSocketState = "CONNECTING";
+
+			var packet = {
+				header: {
+					message_type: "HANDSHAKE",
+					destination: "CLOUD",
+					source: "GATEWAY",
+					direction: "request"
+				},
+				data: {
+					header: {
+						command: "",
+						timestamp: 0
+					},
+					payload: payload
+				},
+				user: {
+					key: self.CloudUserKey
+				},
+				piggybag: {
+					identifier: 0
+				}
+			}
+			self.CloudConnection.sendUTF(JSON.stringify(packet));
+			self.ConnectingTimeout = 5;
+			self.CloudSocketState  = "CONNECTING";
+		});
 	} else if (this.CloudSocketState == "CONNECTING") {
 		if (this.ConnectingTimeout && this.Ticker % this.ConnectingTimeout == 0) {
 			this.CloudSocketState = "DISCONNECTED";
@@ -348,13 +373,12 @@ MkSGateway.prototype.Start = function () {
 		connection.on('message', function(message) {
 			if (message.type === 'utf8') {
 				jsonData = JSON.parse(message.utf8Data);
-
 				console.log("\n", self.ModuleName, "Cloud -> Gateway", jsonData, "\n");
 				if (jsonData.header === undefined) {
 					console.log(self.ModuleName, (new Date()), "Invalid request ...");
 					return;
 				}
-
+				
 				if (jsonData.header.message_type === undefined) {
 					console.log(self.ModuleName, (new Date()), "Invalid request ...");
 					return;
@@ -362,27 +386,41 @@ MkSGateway.prototype.Start = function () {
 				
 				if ("HANDSHAKE" == jsonData.header.message_type) {
 					if (jsonData.user.key == self.CloudUserKey) {
+						// Set state machine
 						self.CloudSocketState  = "CONNECTED";
 						self.ConnectingTimeout = 0;
+						// Handle new socket connection
+						if (jsonData.data.header.command == "webface_new_connection") {
+							console.log("\n", self.ModuleName, "NEW CONNECTION FROM CLOUD", "\n");
+							self.WebfaceIndexer += 1;
+
+							connection.HandlerToUnique[jsonData.piggybag.cloud.handler] = self.WebfaceIndexer;
+							connection.UniqueToHandler[self.WebfaceIndexer] = jsonData.piggybag.cloud.handler;
+
+							self.WebfaceIncome({
+								connection: connection,
+								message: message,
+								webface_indexer: connection.HandlerToUnique[jsonData.piggybag.cloud.handler],
+								additional: {
+									sender: 1,
+									cloud_handler: jsonData.piggybag.cloud.handler
+								}
+							});
+						}
+
 						console.log(self.ModuleName, "Connected to cloud ...");
 					}
 				} else {
-					jsonData = JSON.parse(message.utf8Data);
 					if (jsonData.header.source == "CLOUD") {
-						if (jsonData.data.header.command == "webface_new_connection") {
-							self.WebfaceIndexer += 1;
-
-							connection.HandlerToUnique[jsonData.piggybag.cloud.handler] = WebfaceIndexer;
-							connection.UniqueToHandler[WebfaceIndexer] = jsonData.piggybag.cloud.handler;
-						}
+						// cloud messages handling
 					} else {
 						// Handle packet
 						self.WebfaceIncome({
-							sender: 1,
 							connection: connection,
 							message: message,
 							webface_indexer: connection.HandlerToUnique[jsonData.piggybag.cloud.handler],
 							additional: {
+								sender: 1,
 								cloud_handler: jsonData.piggybag.cloud.handler
 							}
 						});
@@ -433,63 +471,71 @@ MkSGateway.prototype.Start = function () {
 
 		self.WebfaceIndexer += 1;
 		connection.WebfaceIndexer = self.WebfaceIndexer;
+
+		console.log (self.ModuleName, (new Date()), "NEW SESSION:", wsHandle, request.httpRequest.headers['sec-websocket-key']);
 		
 		connection.on('message', function(message) {
 			// Handle packet
 			self.WebfaceIncome({
-				sender: 2,
+				request: request,
 				connection: connection,
 				message: message,
 				webface_indexer: connection.WebfaceIndexer,
-				additional: { }
+				additional: {
+					sender: 2
+				}
 			});
 		});
 		
 		connection.on('close', function(conn) {
 			// Remove application session
-			console.log (self.ModuleName, (new Date()), "Unregister application session:", request.httpRequest.headers.UserKey);
-			var sessions = self.ApplicationList[request.httpRequest.headers.UserKey];
-			if (undefined !== sessions) {
-				for (idx = 0; idx < sessions.length; idx++) {
-					session = sessions[idx];
-					if (session.Socket == connection) {
-						// Send messages to nodes about this disconnection
-						for (var key in self.NodeList) {
-							var item = self.NodeList[key];
-							var packet = {
-								header: {
-									message_type: "DIRECT",
-									destination: item.UUID,
-									source: "GATEWAY",
-									direction: "request"
-								},
-								data: {
+			if (request.httpRequest.headers.UserKey !== undefined) {
+				console.log (self.ModuleName, (new Date()), "Unregister application session:", wsHandle, request.httpRequest.headers.UserKey, request.httpRequest.headers['sec-websocket-key']);
+				var sessions = self.ApplicationList[request.httpRequest.headers.UserKey];
+				if (undefined !== sessions) {
+					for (idx = 0; idx < sessions.length; idx++) {
+						session = sessions[idx];
+						if (session.Socket == connection) {
+							// Send messages to nodes about this disconnection
+							for (var key in self.NodeList) {
+								var item = self.NodeList[key];
+								var packet = {
 									header: {
-										command: "unregister_on_node_change",
-										timestamp: 0
+										message_type: "DIRECT",
+										destination: item.UUID,
+										source: "GATEWAY",
+										direction: "request"
 									},
-									payload: {
-										'webface_indexer': connection.WebfaceIndexer,
-										"item_type": 2
+									data: {
+										header: {
+											command: "unregister_on_node_change",
+											timestamp: 0
+										},
+										payload: {
+											'webface_indexer': connection.WebfaceIndexer,
+											"item_type": 2
+										}
+									},
+									user: {
+										key: { }
+									},
+									additional: {
+										pipe: "GATEWAY"
+									},
+									piggybag: {
+										identifier: 0
 									}
-								},
-								user: {
-									key: { }
-								},
-								additional: {
-									pipe: "GATEWAY"
-								 },
-								piggybag: {
-									identifier: 0
 								}
+								item.Socket.send(JSON.stringify(packet));
 							}
-							item.Socket.send(JSON.stringify(packet));
+							sessions.splice(idx, 1);
+							self.ApplicationList[request.httpRequest.headers.UserKey] = sessions;
+							continue;
 						}
-						sessions.splice(idx, 1);
-						self.ApplicationList[request.httpRequest.headers.UserKey] = sessions;
-						continue;
 					}
 				}
+			} else {
+				console.log (self.ModuleName, (new Date()), "ERROR (Unregister session):", wsHandle, request.httpRequest.headers['sec-websocket-key']);
 			}
 			// Removing connection from the list.
 			self.WSApplicationClients.splice(wsHandle, 1); // Consider to remove this list, we have a connections map.
@@ -537,8 +583,57 @@ MkSGateway.prototype.Start = function () {
 						nodeConn.Node.type = payloadJson.node_type;
 						nodeConn.Node.name = payloadJson.node_name;
 						self.NodeList[request.httpRequest.headers.uuid] = nodeConn;
+
+						// If Cloud connected send list of nodes to Cloud
+						var payload = {
+							nodes: []
+						};
+						self.Database.GetNodesByUserKey(request.httpRequest.headers.key, function(error, data) {
+							if (!error) {
+							} else {
+								for (i = 0; i < data.data.length; i++) {
+									var item = data.data[i];
+									for (var key in self.NodeList) {
+										if (self.NodeList.hasOwnProperty(key)) {
+											node = self.NodeList[key];
+											if (item.uuid == node.UUID) {
+												item.online = true;
+												break;
+											} else {
+												item.online = false;
+											}
+										}
+									}
+								}
+								payload.nodes = data.data;
+							}
+				
+							var packet = {
+								header: {
+									message_type: "DIRECT",
+									destination: "CLOUD",
+									source: "GATEWAY",
+									direction: "request"
+								},
+								data: {
+									header: {
+										command: "update_node_list",
+										timestamp: 0
+									},
+									payload: payload
+								},
+								user: {
+									key: request.httpRequest.headers.key
+								},
+								piggybag: {
+									identifier: 0
+								}
+							}
+							self.CloudConnection.sendUTF(JSON.stringify(packet));
+						});
 						
 						// Send event to all application instances about this node.
+						// TODO - Proxy it via Cloaud
 						self.SendNodeRegistrationEvent(request.httpRequest.headers.uuid, request.httpRequest.headers.node_type);
 						
 						connection.on('message', function(message) {
@@ -546,7 +641,7 @@ MkSGateway.prototype.Start = function () {
 								connection.LastMessageData = message.utf8Data;
 								jsonData = JSON.parse(message.utf8Data);
 								
-								console.log("\n", self.ModuleName, "Node -> Application", jsonData, "\n");								
+								console.log("\n", self.ModuleName, "Node -> Application", jsonData, "\n");
 								if ("HANDSHAKE" == jsonData.header.message_type) {
 								} else {
 									var destination = jsonData.header.destination;
@@ -601,22 +696,21 @@ MkSGateway.prototype.Start = function () {
 													node.Socket.send(JSON.stringify(jsonData));
 												} else {
 													if ("WEBFACE" == destination) {
-														// Handling Cloud connection
-														if (self.CloudConnection) {
-															for (idx = 0; idx < self.WebfaceIndexer.length; idx++) {
-																if (self.WebfaceIndexer[idx] == jsonData.piggybag.webface_indexer) {
-																	self.CloudConnection.sendUTF(message.utf8Data);
-																}
-															}
-														}
-
 														// Handling Webface sessions
 														var sessions = self.ApplicationList[jsonData.user.key];
 														if (undefined !== sessions) {
 															var sessionFound = false;
 															for (idx = 0; idx < sessions.length; idx++) {
 																session = sessions[idx];
-																if (session.Socket.WebfaceIndexer == jsonData.piggybag.webface_indexer) {
+																// if (session.Socket.WebfaceIndexer == jsonData.piggybag.webface_indexer) {
+																if (session.WebfaceIndexer == jsonData.piggybag.webface_indexer) {
+																	if (session.Additional.sender == 1) {
+																		// Handling Cloud connection
+																		console.log("\n", self.ModuleName, "Node -> Application", session.Additional.cloud_handler, "\n");
+																		jsonData.piggybag.cloud.handler = session.Additional.cloud_handler;
+																	} else {
+
+																	}
 																	session.Socket.send(JSON.stringify(jsonData));
 																	sessionFound = true;
 																	continue;
@@ -757,27 +851,31 @@ MkSGateway.prototype.Start = function () {
 MkSGateway.prototype.WebfaceIncome = function (info) {
 	var self = this;
 
-	if (message.type === 'utf8') {
-		jsonData = JSON.parse(message.utf8Data);
-		console.log("\n", self.ModuleName, "Application -> Node", jsonData, "\n");
+	if (info.message.type === 'utf8') {
+		jsonData = JSON.parse(info.message.utf8Data);
+		console.log(self.ModuleName, "Application -> Node", jsonData);
 		
 		if ("HANDSHAKE" == jsonData.header.message_type) {
-			console.log(self.ModuleName, (new Date()), "Register new application session:", jsonData.key);
-			request.httpRequest.headers.UserKey = jsonData.key;
+			console.log(self.ModuleName, (new Date()), "Register new application session:", jsonData.user.key);
+
+			if (info.additional.sender == 2) {
+				info.request.httpRequest.headers.UserKey = jsonData.user.key;
+			}
 			
-			var userSessionList = self.ApplicationList[jsonData.key];
+			var userSessionList = self.ApplicationList[jsonData.user.key];
 			if (undefined === userSessionList) {
 				userSessionList = []
 			}
 
+			console.log("-->\n", info, "\n<--");
 			userSessionList.push(new ApplicationSession({
-				key: jsonData.key, 
+				key: jsonData.user.key, 
 				sock: info.connection,
 				last_packet: info.message.utf8Data,
 				webface_indexer: info.webface_indexer,
 				additional: info.additional
 			}));
-			self.ApplicationList[jsonData.key] = userSessionList;
+			self.ApplicationList[jsonData.user.key] = userSessionList;
 		} else {
 			var destination = jsonData.header.destination;
 			switch(jsonData.header.message_type) {
