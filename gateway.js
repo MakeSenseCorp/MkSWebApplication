@@ -826,6 +826,53 @@ MkSGateway.prototype.Start = function () {
 															// Send event to all application instances about this node.
 															self.SendNodeRegistrationEvent(payload.node.uuid, payload.node.type);
 														}
+														var payload = {
+															nodes: []
+														};
+														self.Database.GetNodesByUserKey(request.httpRequest.headers.key, function(error, data) {
+															if (!error) {
+															} else {
+																for (i = 0; i < data.data.length; i++) {
+																	var nodeDB = data.data[i];
+																	nodeDB.online = false;
+																	for (var key in self.NodeList) {
+																		if (self.NodeList.hasOwnProperty(key)) {
+																			node = self.NodeList[key];
+																			if (nodeDB.uuid == node.UUID) {
+																				nodeDB.online = true;
+																				break;
+																			} else {
+																				nodeDB.online = false;
+																			}
+																		}
+																	}
+																}
+																payload.nodes = data.data;
+															}
+												
+															var packet = {
+																header: {
+																	message_type: "DIRECT",
+																	destination: "CLOUD",
+																	source: "GATEWAY",
+																	direction: "request"
+																},
+																data: {
+																	header: {
+																		command: "update_node_list",
+																		timestamp: 0
+																	},
+																	payload: payload
+																},
+																user: {
+																	key: request.httpRequest.headers.key
+																},
+																piggybag: {
+																	identifier: 0
+																}
+															}
+															self.CloudConnection.sendUTF(JSON.stringify(packet));
+														});
 													break;
 													case "node_disconnected":
 														console.log (self.ModuleName, (new Date()), "Unregister node:", payload.node.uuid);
@@ -834,6 +881,53 @@ MkSGateway.prototype.Start = function () {
 															self.SendNodeUnRegistrationEvent(payload.node.uuid);
 															delete self.NodeList[payload.node.uuid];
 														}
+														var payload = {
+															nodes: []
+														};
+														self.Database.GetNodesByUserKey(request.httpRequest.headers.key, function(error, data) {
+															if (!error) {
+															} else {
+																for (i = 0; i < data.data.length; i++) {
+																	var nodeDB = data.data[i];
+																	nodeDB.online = false;
+																	for (var key in self.NodeList) {
+																		if (self.NodeList.hasOwnProperty(key)) {
+																			node = self.NodeList[key];
+																			if (nodeDB.uuid == node.UUID) {
+																				nodeDB.online = true;
+																				break;
+																			} else {
+																				nodeDB.online = false;
+																			}
+																		}
+																	}
+																}
+																payload.nodes = data.data;
+															}
+												
+															var packet = {
+																header: {
+																	message_type: "DIRECT",
+																	destination: "CLOUD",
+																	source: "GATEWAY",
+																	direction: "request"
+																},
+																data: {
+																	header: {
+																		command: "update_node_list",
+																		timestamp: 0
+																	},
+																	payload: payload
+																},
+																user: {
+																	key: request.httpRequest.headers.key
+																},
+																piggybag: {
+																	identifier: 0
+																}
+															}
+															self.CloudConnection.sendUTF(JSON.stringify(packet));
+														});
 													break;
 												}
 											}
@@ -846,6 +940,16 @@ MkSGateway.prototype.Start = function () {
 						});
 						connection.on('close', function(connection) {
 							console.log (self.ModuleName, (new Date()), "Unregister node:", request.httpRequest.headers.uuid);
+							// Send event to all application instances about this node.
+							self.SendNodeUnRegistrationEvent(request.httpRequest.headers.uuid);
+							// TODO - Delete all nodes connection related to this master
+							if (self.NodeList[request.httpRequest.headers.uuid] !== undefined) {
+								delete self.NodeList[request.httpRequest.headers.uuid];
+							} else {
+								console.log (self.ModuleName, (new Date()), "ERROR unregistering Node:", request.httpRequest.headers.uuid);
+							}
+							// Removing connection from the list.
+							self.WSNodeClients.splice(wsHandle, 1); // Consider to remove this list, we have a connections map.
 							var payload = {
 								nodes: []
 							};
@@ -854,14 +958,15 @@ MkSGateway.prototype.Start = function () {
 								} else {
 									for (i = 0; i < data.data.length; i++) {
 										var nodeDB = data.data[i];
+										nodeDB.online = false;
 										for (var key in self.NodeList) {
 											if (self.NodeList.hasOwnProperty(key)) {
 												node = self.NodeList[key];
 												if (nodeDB.uuid == node.UUID) {
-													nodeDB.online = false;
+													nodeDB.online = true;
 													break;
 												} else {
-													nodeDB.online = true;
+													nodeDB.online = false;
 												}
 											}
 										}
@@ -892,16 +997,6 @@ MkSGateway.prototype.Start = function () {
 								}
 								self.CloudConnection.sendUTF(JSON.stringify(packet));
 							});
-							// Send event to all application instances about this node.
-							self.SendNodeUnRegistrationEvent(request.httpRequest.headers.uuid);
-							// TODO - Delete all nodes connection related to this master
-							if (self.NodeList[request.httpRequest.headers.uuid] !== undefined) {
-								delete self.NodeList[request.httpRequest.headers.uuid];
-							} else {
-								console.log (self.ModuleName, (new Date()), "ERROR unregistering Node:", request.httpRequest.headers.uuid);
-							}
-							// Removing connection from the list.
-							self.WSNodeClients.splice(wsHandle, 1); // Consider to remove this list, we have a connections map.
 						});
 					} else {
 						return;
