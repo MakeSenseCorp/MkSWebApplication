@@ -62,7 +62,6 @@ MkSWebface.prototype.InitRouter = function (server) {
 				if (!error) {
 					res.json({error:"sql error", nodes:""});
 				} else {
-					console.log(data);
 					for (i = 0; i < data.data.length; i++) {
 						var item = data.data[i];
 						for (var key in self.Gateway.NodeList) {

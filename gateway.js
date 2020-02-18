@@ -14,23 +14,6 @@ function Connection (uuid, sock) {
 		type: 0,
 		name: ""
 	};
-	this.Subscribers 	= [];
-
-	this.AddSubscriber = function (uuid) {
-		this.Subscribers.push(uuid);
-	}
-
-	this.RemoveSubscriber = function (uuid) {
-		for (var index in this.Subscribers) {
-			if (this.Subscribers[index] == uuid) {
-				this.Subscribers.splice(index, 1);
-			}
-		}
-	}
-
-	this.CleanSubscribers = function () {
-		this.Subscribers = [];
-	}
 
 	return this;
 }
@@ -59,6 +42,7 @@ function MkSGateway (gatewayInfo) {
 	this.WSNode					= null;
 	this.ServerApplication 		= null;
 	this.WSApplication			= null;
+
 	this.RestApi 				= express();
 	this.Database 				= null;
 	this.NodeList				= {}; // Key is node uuid
@@ -73,7 +57,7 @@ function MkSGateway (gatewayInfo) {
 	});
 	this.CloudConnection 		= null;
 	this.CloudUserKey 			= "ac6de837-7863-72a9-c789-a0aae7e9d93e";
-	this.CloudURL 				= "10.0.0.10";
+	this.CloudURL 				= "10.0.2.15";
 	this.CloudPort 				= "2000";
 	this.WebfaceIndexerList 	= []
 	
@@ -96,6 +80,9 @@ function MkSGateway (gatewayInfo) {
 	
 	// Each 10 minutes send keepalive packet
 	this.KeepaliveMonitor = setInterval(this.KeepAliveMonitorHandler.bind(this), 10 * 60 * 1000);
+
+	// Each 10 second print connected sessions
+	this.SessionsMonitor = setInterval(this.SessionsMonitorHandler.bind(this), 10 * 1 * 1000);
 
 	// Each 1 seconds state machine manager
 	this.CloudConnectionStateMachineManager = null;
@@ -163,6 +150,23 @@ MkSGateway.prototype.GetConnectionsNodeList = function () {
 MkSGateway.prototype.KeepAliveMonitorHandler = function () {
 	console.log(this.ModuleName, "KeepAliveMonitorHandler");
 	this.SendKeepAliveEvent();
+}
+
+MkSGateway.prototype.SessionsMonitorHandler = function () {
+	console.log(this.ModuleName, "Node Connected Sessions:");
+	for (key in this.NodeList) {
+		var node = this.NodeList[key];
+		console.log(this.ModuleName, "\t", key, node.Node.type, node.Node.name);
+	}
+
+	console.log(this.ModuleName, "Application Connected Sessions:");
+	for (key in this.ApplicationList) {
+		var apps = this.ApplicationList[key];
+		for (var i = 0; i < apps.length; i++) {
+			app = apps[i];
+			console.log(this.ModuleName, "\t", key, app.WebfaceIndexer);
+		}
+	}
 }
 
 MkSGateway.prototype.CloudConnectionStateMachineHandler = function() {
@@ -391,7 +395,7 @@ MkSGateway.prototype.Start = function () {
 						self.ConnectingTimeout = 0;
 						// Handle new socket connection
 						if (jsonData.data.header.command == "webface_new_connection") {
-							console.log("\n", self.ModuleName, "NEW CONNECTION FROM CLOUD", "\n");
+							console.log(self.ModuleName, "Cloud -> Gateway [NEW WEBFACE CONNECTION]", jsonData.piggybag.cloud.handler);
 							self.WebfaceIndexer += 1;
 
 							connection.HandlerToUnique[jsonData.piggybag.cloud.handler] = self.WebfaceIndexer;
@@ -413,6 +417,25 @@ MkSGateway.prototype.Start = function () {
 				} else {
 					if (jsonData.header.source == "CLOUD") {
 						// cloud messages handling
+						if (jsonData.data.header.command == "webface_remove_connection") {
+							console.log(self.ModuleName, "REMOVE CONNECTION");
+							var ws_handler = jsonData.additional.cloud.handler;
+							connection.UniqueToHandler[connection.HandlerToUnique[ws_handler]] = 0;
+							connection.HandlerToUnique[ws_handler] = 0;
+
+							var userSessionList = self.ApplicationList[jsonData.user.key];
+							var idxToDelete = -1;
+							for (var i = 0; i < userSessionList.length; i++) {
+								if (userSessionList[i].Additional.cloud_handler == ws_handler) {
+									idxToDelete = i;
+									break;
+								}
+							}
+							if (idxToDelete > -1) {
+								userSessionList.splice(idxToDelete, 1);
+								self.ApplicationList[jsonData.user.key] = userSessionList;
+							}
+						}
 					} else {
 						// Handle packet
 						self.WebfaceIncome({
@@ -585,52 +608,54 @@ MkSGateway.prototype.Start = function () {
 						self.NodeList[request.httpRequest.headers.uuid] = nodeConn;
 
 						// If Cloud connected send list of nodes to Cloud
-						var payload = {
-							nodes: []
-						};
-						self.Database.GetNodesByUserKey(request.httpRequest.headers.key, function(error, data) {
-							if (!error) {
-							} else {
-								for (i = 0; i < data.data.length; i++) {
-									var nodeDB = data.data[i];
-									for (var key in self.NodeList) {
-										if (self.NodeList.hasOwnProperty(key)) {
-											node = self.NodeList[key];
-											if (nodeDB.uuid == node.UUID) {
-												nodeDB.online = true;
-												break;
-											} else {
-												nodeDB.online = false;
+						if (self.CloudConnection !== undefined && self.CloudConnection != null) {
+							var payload = {
+								nodes: []
+							};
+							self.Database.GetNodesByUserKey(request.httpRequest.headers.key, function(error, data) {
+								if (!error) {
+								} else {
+									for (i = 0; i < data.data.length; i++) {
+										var nodeDB = data.data[i];
+										for (var key in self.NodeList) {
+											if (self.NodeList.hasOwnProperty(key)) {
+												node = self.NodeList[key];
+												if (nodeDB.uuid == node.UUID) {
+													nodeDB.online = true;
+													break;
+												} else {
+													nodeDB.online = false;
+												}
 											}
 										}
 									}
+									payload.nodes = data.data;
 								}
-								payload.nodes = data.data;
-							}
-				
-							var packet = {
-								header: {
-									message_type: "DIRECT",
-									destination: "CLOUD",
-									source: "GATEWAY",
-									direction: "request"
-								},
-								data: {
+					
+								var packet = {
 									header: {
-										command: "update_node_list",
-										timestamp: 0
+										message_type: "DIRECT",
+										destination: "CLOUD",
+										source: "GATEWAY",
+										direction: "request"
 									},
-									payload: payload
-								},
-								user: {
-									key: request.httpRequest.headers.key
-								},
-								piggybag: {
-									identifier: 0
+									data: {
+										header: {
+											command: "update_node_list",
+											timestamp: 0
+										},
+										payload: payload
+									},
+									user: {
+										key: request.httpRequest.headers.key
+									},
+									piggybag: {
+										identifier: 0
+									}
 								}
-							}
-							self.CloudConnection.sendUTF(JSON.stringify(packet));
-						});
+								self.CloudConnection.sendUTF(JSON.stringify(packet));
+							});
+						}
 						
 						// Send event to all application instances about this node.
 						// TODO - Proxy it via Cloaud
@@ -701,7 +726,6 @@ MkSGateway.prototype.Start = function () {
 															var sessionFound = false;
 															for (idx = 0; idx < sessions.length; idx++) {
 																session = sessions[idx];
-																// if (session.Socket.WebfaceIndexer == jsonData.piggybag.webface_indexer) {
 																if (session.WebfaceIndexer == jsonData.piggybag.webface_indexer) {
 																	if (session.Additional.sender == 1) {
 																		// Handling Cloud connection
@@ -806,7 +830,6 @@ MkSGateway.prototype.Start = function () {
 													case "node_disconnected":
 														console.log (self.ModuleName, (new Date()), "Unregister node:", payload.node.uuid);
 														if (self.NodeList[request.httpRequest.headers.uuid] !== undefined) {
-															self.NodeList[request.httpRequest.headers.uuid].CleanSubscribers();
 															// Send event to all application instances about this node.
 															self.SendNodeUnRegistrationEvent(payload.node.uuid);
 															delete self.NodeList[payload.node.uuid];
@@ -823,6 +846,9 @@ MkSGateway.prototype.Start = function () {
 						});
 						connection.on('close', function(connection) {
 							console.log (self.ModuleName, (new Date()), "Unregister node:", request.httpRequest.headers.uuid);
+							var payload = {
+								nodes: []
+							};
 							self.Database.GetNodesByUserKey(request.httpRequest.headers.key, function(error, data) {
 								if (!error) {
 								} else {
@@ -870,7 +896,6 @@ MkSGateway.prototype.Start = function () {
 							self.SendNodeUnRegistrationEvent(request.httpRequest.headers.uuid);
 							// TODO - Delete all nodes connection related to this master
 							if (self.NodeList[request.httpRequest.headers.uuid] !== undefined) {
-								self.NodeList[request.httpRequest.headers.uuid].CleanSubscribers();
 								delete self.NodeList[request.httpRequest.headers.uuid];
 							} else {
 								console.log (self.ModuleName, (new Date()), "ERROR unregistering Node:", request.httpRequest.headers.uuid);
@@ -909,7 +934,6 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 				userSessionList = []
 			}
 
-			// console.log("-->\n", info, "\n<--");
 			userSessionList.push(new ApplicationSession({
 				key: jsonData.user.key, 
 				sock: info.connection,
