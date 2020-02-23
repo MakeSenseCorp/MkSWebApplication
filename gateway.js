@@ -57,8 +57,8 @@ function MkSGateway (gatewayInfo) {
 	});
 	this.CloudConnection 		= null;
 	this.CloudUserKey 			= "ac6de837-7863-72a9-c789-a0aae7e9d93e";
-	this.CloudURL 				= "10.0.2.15";
-	this.CloudPort 				= "2000";
+	this.CloudURL 				= "ec2-54-188-199-33.us-west-2.compute.amazonaws.com";
+	this.CloudPort 				= "443";
 	this.WebfaceIndexerList 	= []
 	
 	// Monitoring
@@ -424,16 +424,18 @@ MkSGateway.prototype.Start = function () {
 							connection.HandlerToUnique[ws_handler] = 0;
 
 							var userSessionList = self.ApplicationList[jsonData.user.key];
-							var idxToDelete = -1;
-							for (var i = 0; i < userSessionList.length; i++) {
-								if (userSessionList[i].Additional.cloud_handler == ws_handler) {
-									idxToDelete = i;
-									break;
+							if (userSessionList !== undefined && userSessionList != null) {
+								var idxToDelete = -1;
+								for (var i = 0; i < userSessionList.length; i++) {
+									if (userSessionList[i].Additional.cloud_handler == ws_handler) {
+										idxToDelete = i;
+										break;
+									}
 								}
-							}
-							if (idxToDelete > -1) {
-								userSessionList.splice(idxToDelete, 1);
-								self.ApplicationList[jsonData.user.key] = userSessionList;
+								if (idxToDelete > -1) {
+									userSessionList.splice(idxToDelete, 1);
+									self.ApplicationList[jsonData.user.key] = userSessionList;
+								}
 							}
 						}
 					} else {
@@ -730,7 +732,13 @@ MkSGateway.prototype.Start = function () {
 																	if (session.Additional.sender == 1) {
 																		// Handling Cloud connection
 																		console.log("\n", self.ModuleName, "Proxy message above to cloud, Handler:", session.Additional.cloud_handler, "\n");
-																		jsonData.piggybag.cloud.handler = session.Additional.cloud_handler;
+																		if (jsonData.piggybag.cloud == undefined) {
+																			jsonData.piggybag.cloud = {
+																				handler: session.Additional.cloud_handler
+																			};
+																		} else {
+																			jsonData.piggybag.cloud.handler = session.Additional.cloud_handler;
+																		}
 																	} else {
 
 																	}
@@ -1039,6 +1047,7 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 			self.ApplicationList[jsonData.user.key] = userSessionList;
 		} else {
 			var destination = jsonData.header.destination;
+			jsonData.stamping.push("gateway_t");
 			switch(jsonData.header.message_type) {
 				case "DIRECT":
 					var node = self.NodeList[destination];
