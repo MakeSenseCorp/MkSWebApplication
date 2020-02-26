@@ -1047,6 +1047,9 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 			self.ApplicationList[jsonData.user.key] = userSessionList;
 		} else {
 			var destination = jsonData.header.destination;
+			if (jsonData.stamping == undefined) {
+				jsonData.stamping = [];
+			}
 			jsonData.stamping.push("gateway_t");
 			switch(jsonData.header.message_type) {
 				case "DIRECT":
