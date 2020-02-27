@@ -184,54 +184,58 @@ MkSGateway.prototype.CloudConnectionStateMachineHandler = function() {
 		}
 	} else if (this.CloudSocketState == "HANDSHAKE") {
 		self.Database.GetNodesByUserKey(this.CloudUserKey, function(error, data) {
-			if (!error) {
-			} else {
-				for (i = 0; i < data.data.length; i++) {
-					var item = data.data[i];
-					for (var key in self.NodeList) {
-						if (self.NodeList.hasOwnProperty(key)) {
-							node = self.NodeList[key];
-							if (item.uuid == node.UUID) {
-								item.online = true;
-								break;
-							} else {
-								item.online = false;
+			if (self.CloudConnection !== undefined && self.CloudConnection != null) {
+				if (!error) {
+				} else {
+					for (i = 0; i < data.data.length; i++) {
+						var item = data.data[i];
+						for (var key in self.NodeList) {
+							if (self.NodeList.hasOwnProperty(key)) {
+								node = self.NodeList[key];
+								if (item.uuid == node.UUID) {
+									item.online = true;
+									break;
+								} else {
+									item.online = false;
+								}
 							}
 						}
 					}
+					payload.nodes = data.data;
 				}
-				payload.nodes = data.data;
-			}
 
-			var packet = {
-				header: {
-					message_type: "HANDSHAKE",
-					destination: "CLOUD",
-					source: "GATEWAY",
-					direction: "request"
-				},
-				data: {
+				var packet = {
 					header: {
-						command: "",
-						timestamp: 0
+						message_type: "HANDSHAKE",
+						destination: "CLOUD",
+						source: "GATEWAY",
+						direction: "request"
 					},
-					payload: payload
-				},
-				user: {
-					key: self.CloudUserKey
-				},
-				piggybag: {
-					identifier: 0
+					data: {
+						header: {
+							command: "",
+							timestamp: 0
+						},
+						payload: payload
+					},
+					user: {
+						key: self.CloudUserKey
+					},
+					piggybag: {
+						identifier: 0
+					}
 				}
+				self.CloudConnection.sendUTF(JSON.stringify(packet));
+				self.ConnectingTimeout = 5;
+				self.CloudSocketState  = "CONNECTING";
 			}
-			self.CloudConnection.sendUTF(JSON.stringify(packet));
-			self.ConnectingTimeout = 5;
-			self.CloudSocketState  = "CONNECTING";
 		});
 	} else if (this.CloudSocketState == "CONNECTING") {
 		if (this.ConnectingTimeout && this.Ticker % this.ConnectingTimeout == 0) {
 			this.CloudSocketState = "DISCONNECTED";
-			this.CloudConnection.close();
+			if (self.CloudConnection !== undefined && self.CloudConnection != null) {
+				this.CloudConnection.close();
+			}
 			this.ConnectingTimeout = 0;
 		}
 	} else if (this.CloudSocketState == "CONNECTED") {
@@ -838,48 +842,50 @@ MkSGateway.prototype.Start = function () {
 															nodes: []
 														};
 														self.Database.GetNodesByUserKey(request.httpRequest.headers.key, function(error, data) {
-															if (!error) {
-															} else {
-																for (i = 0; i < data.data.length; i++) {
-																	var nodeDB = data.data[i];
-																	nodeDB.online = false;
-																	for (var key in self.NodeList) {
-																		if (self.NodeList.hasOwnProperty(key)) {
-																			node = self.NodeList[key];
-																			if (nodeDB.uuid == node.UUID) {
-																				nodeDB.online = true;
-																				break;
-																			} else {
-																				nodeDB.online = false;
+															if (self.CloudConnection !== undefined && self.CloudConnection != null) {
+																if (!error) {
+																} else {
+																	for (i = 0; i < data.data.length; i++) {
+																		var nodeDB = data.data[i];
+																		nodeDB.online = false;
+																		for (var key in self.NodeList) {
+																			if (self.NodeList.hasOwnProperty(key)) {
+																				node = self.NodeList[key];
+																				if (nodeDB.uuid == node.UUID) {
+																					nodeDB.online = true;
+																					break;
+																				} else {
+																					nodeDB.online = false;
+																				}
 																			}
 																		}
 																	}
+																	payload.nodes = data.data;
 																}
-																payload.nodes = data.data;
-															}
-												
-															var packet = {
-																header: {
-																	message_type: "DIRECT",
-																	destination: "CLOUD",
-																	source: "GATEWAY",
-																	direction: "request"
-																},
-																data: {
+													
+																var packet = {
 																	header: {
-																		command: "update_node_list",
-																		timestamp: 0
+																		message_type: "DIRECT",
+																		destination: "CLOUD",
+																		source: "GATEWAY",
+																		direction: "request"
 																	},
-																	payload: payload
-																},
-																user: {
-																	key: request.httpRequest.headers.key
-																},
-																piggybag: {
-																	identifier: 0
+																	data: {
+																		header: {
+																			command: "update_node_list",
+																			timestamp: 0
+																		},
+																		payload: payload
+																	},
+																	user: {
+																		key: request.httpRequest.headers.key
+																	},
+																	piggybag: {
+																		identifier: 0
+																	}
 																}
+																self.CloudConnection.sendUTF(JSON.stringify(packet));
 															}
-															self.CloudConnection.sendUTF(JSON.stringify(packet));
 														});
 													break;
 													case "node_disconnected":
@@ -893,48 +899,51 @@ MkSGateway.prototype.Start = function () {
 															nodes: []
 														};
 														self.Database.GetNodesByUserKey(request.httpRequest.headers.key, function(error, data) {
-															if (!error) {
-															} else {
-																for (i = 0; i < data.data.length; i++) {
-																	var nodeDB = data.data[i];
-																	nodeDB.online = false;
-																	for (var key in self.NodeList) {
-																		if (self.NodeList.hasOwnProperty(key)) {
-																			node = self.NodeList[key];
-																			if (nodeDB.uuid == node.UUID) {
-																				nodeDB.online = true;
-																				break;
-																			} else {
-																				nodeDB.online = false;
+															// TODO - Next code section repeat itself in several places.
+															if (self.CloudConnection !== undefined && self.CloudConnection != null) {
+																if (!error) {
+																} else {
+																	for (i = 0; i < data.data.length; i++) {
+																		var nodeDB = data.data[i];
+																		nodeDB.online = false;
+																		for (var key in self.NodeList) {
+																			if (self.NodeList.hasOwnProperty(key)) {
+																				node = self.NodeList[key];
+																				if (nodeDB.uuid == node.UUID) {
+																					nodeDB.online = true;
+																					break;
+																				} else {
+																					nodeDB.online = false;
+																				}
 																			}
 																		}
 																	}
+																	payload.nodes = data.data;
 																}
-																payload.nodes = data.data;
-															}
-												
-															var packet = {
-																header: {
-																	message_type: "DIRECT",
-																	destination: "CLOUD",
-																	source: "GATEWAY",
-																	direction: "request"
-																},
-																data: {
+													
+																var packet = {
 																	header: {
-																		command: "update_node_list",
-																		timestamp: 0
+																		message_type: "DIRECT",
+																		destination: "CLOUD",
+																		source: "GATEWAY",
+																		direction: "request"
 																	},
-																	payload: payload
-																},
-																user: {
-																	key: request.httpRequest.headers.key
-																},
-																piggybag: {
-																	identifier: 0
+																	data: {
+																		header: {
+																			command: "update_node_list",
+																			timestamp: 0
+																		},
+																		payload: payload
+																	},
+																	user: {
+																		key: request.httpRequest.headers.key
+																	},
+																	piggybag: {
+																		identifier: 0
+																	}
 																}
+																self.CloudConnection.sendUTF(JSON.stringify(packet));
 															}
-															self.CloudConnection.sendUTF(JSON.stringify(packet));
 														});
 													break;
 												}
@@ -962,48 +971,50 @@ MkSGateway.prototype.Start = function () {
 								nodes: []
 							};
 							self.Database.GetNodesByUserKey(request.httpRequest.headers.key, function(error, data) {
-								if (!error) {
-								} else {
-									for (i = 0; i < data.data.length; i++) {
-										var nodeDB = data.data[i];
-										nodeDB.online = false;
-										for (var key in self.NodeList) {
-											if (self.NodeList.hasOwnProperty(key)) {
-												node = self.NodeList[key];
-												if (nodeDB.uuid == node.UUID) {
-													nodeDB.online = true;
-													break;
-												} else {
-													nodeDB.online = false;
+								if (self.CloudConnection !== undefined && self.CloudConnection != null) {
+									if (!error) {
+									} else {
+										for (i = 0; i < data.data.length; i++) {
+											var nodeDB = data.data[i];
+											nodeDB.online = false;
+											for (var key in self.NodeList) {
+												if (self.NodeList.hasOwnProperty(key)) {
+													node = self.NodeList[key];
+													if (nodeDB.uuid == node.UUID) {
+														nodeDB.online = true;
+														break;
+													} else {
+														nodeDB.online = false;
+													}
 												}
 											}
 										}
+										payload.nodes = data.data;
 									}
-									payload.nodes = data.data;
-								}
-					
-								var packet = {
-									header: {
-										message_type: "DIRECT",
-										destination: "CLOUD",
-										source: "GATEWAY",
-										direction: "request"
-									},
-									data: {
+						
+									var packet = {
 										header: {
-											command: "update_node_list",
-											timestamp: 0
+											message_type: "DIRECT",
+											destination: "CLOUD",
+											source: "GATEWAY",
+											direction: "request"
 										},
-										payload: payload
-									},
-									user: {
-										key: request.httpRequest.headers.key
-									},
-									piggybag: {
-										identifier: 0
+										data: {
+											header: {
+												command: "update_node_list",
+												timestamp: 0
+											},
+											payload: payload
+										},
+										user: {
+											key: request.httpRequest.headers.key
+										},
+										piggybag: {
+											identifier: 0
+										}
 									}
+									self.CloudConnection.sendUTF(JSON.stringify(packet));
 								}
-								self.CloudConnection.sendUTF(JSON.stringify(packet));
 							});
 						});
 					} else {
