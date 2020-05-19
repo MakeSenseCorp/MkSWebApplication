@@ -64,6 +64,7 @@ MkSWebface.prototype.InitRouter = function (server) {
 				} else {
 					for (i = 0; i < data.data.length; i++) {
 						var item = data.data[i];
+						item.online = false;
 						for (var key in self.Gateway.NodeList) {
 							if (self.Gateway.NodeList.hasOwnProperty(key)) {
 								node = self.Gateway.NodeList[key];
@@ -76,7 +77,7 @@ MkSWebface.prototype.InitRouter = function (server) {
 							}
 						}
 					}
-					// console.log(self.Gateway.NodeList);
+					console.log("Webface", data);
 					res.json({error:"none", nodes:data});
 				}
 			});
