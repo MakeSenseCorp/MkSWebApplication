@@ -77,7 +77,6 @@ MkSWebface.prototype.InitRouter = function (server) {
 							}
 						}
 					}
-					console.log("Webface", data);
 					res.json({error:"none", nodes:data});
 				}
 			});
