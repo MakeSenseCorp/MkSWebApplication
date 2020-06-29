@@ -459,7 +459,7 @@ MkSGateway.prototype.Start = function () {
 		});
 	});
 
-	this.CloudConnectionStateMachineManager = setInterval(this.CloudConnectionStateMachineHandler.bind(this), 1 * 1000);
+	// this.CloudConnectionStateMachineManager = setInterval(this.CloudConnectionStateMachineHandler.bind(this), 1 * 1000);
 	
 	// Create listener server
 	this.ServerNode = http.createServer(function(request, response) {
@@ -527,8 +527,10 @@ MkSGateway.prototype.Start = function () {
 						if (session.Socket == connection) {
 							// Send messages to nodes about this disconnection
 							for (var key in self.NodeList) {
-								console.log (self.ModuleName, (new Date()), "Send [unregister_on_node_change] to ", item.UUID);
+								// Will cause node to crash. TODO - Make gateway prone to exceptions and errors.
+								// console.log (self.ModuleName, (new Date()), "(APPLICATION SESSION CLOSED) Send [unregister_on_node_change] to ", item.UUID);
 								var item = self.NodeList[key];
+								console.log (self.ModuleName, (new Date()), "(APPLICATION SESSION CLOSED) Send [unregister_on_node_change] to ", item.UUID);
 								var packet = {
 									header: {
 										message_type: "DIRECT",
@@ -542,7 +544,6 @@ MkSGateway.prototype.Start = function () {
 											timestamp: 0
 										},
 										payload: {
-											'webface_indexer': connection.WebfaceIndexer,
 											"item_type": 2
 										}
 									},
@@ -553,6 +554,7 @@ MkSGateway.prototype.Start = function () {
 										pipe: "GATEWAY"
 									},
 									piggybag: {
+										'webface_indexer': connection.WebfaceIndexer,
 										identifier: 0
 									}
 								}
@@ -674,11 +676,11 @@ MkSGateway.prototype.Start = function () {
 								jsonData = JSON.parse(message.utf8Data);
 								
 								// console.log("\n", self.ModuleName, "Node -> Application", jsonData, "\n");
-								console.log("\n", self.ModuleName, "[Node -> Application]", jsonData.header.source, " -> ", jsonData.header.destination, "\n");
 								if ("HANDSHAKE" == jsonData.header.message_type) {
 								} else {
 									var destination = jsonData.header.destination;
 									var source 		= jsonData.header.source;
+									console.log("\n", self.ModuleName, "[Node -> Application]", source, "->", destination, jsonData.data.header.command, "\n");
 									switch(jsonData.header.message_type) {
 										case "DIRECT":
 											if ("GATEWAY" == destination) {
@@ -734,6 +736,7 @@ MkSGateway.prototype.Start = function () {
 															var sessionFound = false;
 															for (idx = 0; idx < sessions.length; idx++) {
 																session = sessions[idx];
+																// console.log (self.ModuleName, (new Date()), "SEARCH SESSION", session.WebfaceIndexer, jsonData.piggybag.webface_indexer);
 																if (session.WebfaceIndexer == jsonData.piggybag.webface_indexer) {
 																	if (session.Additional.sender == 1) {
 																		// Handling Cloud connection
@@ -756,7 +759,8 @@ MkSGateway.prototype.Start = function () {
 
 															if (sessionFound == false) {
 																// Send session disconnected packet
-																console.log (self.ModuleName, (new Date()), "Send [unregister_on_node_change] to ", jsonData.header.source);
+																console.log (self.ModuleName, (new Date()), "(SESSION NOT FOUND) Send [unregister_on_node_change] to ", jsonData.header.source);
+																console.log (self.ModuleName, (new Date()), jsonData);
 																var packet = {
 																	header: {
 																		message_type: "DIRECT",
@@ -770,7 +774,6 @@ MkSGateway.prototype.Start = function () {
 																			timestamp: 0
 																		},
 																		payload: {
-																			'webface_indexer': jsonData.piggybag.webface_indexer,
 																			"item_type": 2
 																		}
 																	},
@@ -781,6 +784,7 @@ MkSGateway.prototype.Start = function () {
 																		pipe: "GATEWAY"
 																	},
 																	piggybag: {
+																		'webface_indexer': jsonData.piggybag.webface_indexer,
 																		identifier: 0
 																	}
 																}
@@ -1038,7 +1042,6 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 	if (info.message.type === 'utf8') {
 		jsonData = JSON.parse(info.message.utf8Data);
 		// console.log(self.ModuleName, "Application -> Node", jsonData);
-		console.log("\n", self.ModuleName, "[Application -> Node]", jsonData.header.source, " -> ", jsonData.header.destination, "\n");
 		
 		if ("HANDSHAKE" == jsonData.header.message_type) {
 			console.log(self.ModuleName, (new Date()), "Register new application session:", jsonData.user.key);
@@ -1062,6 +1065,7 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 			self.ApplicationList[jsonData.user.key] = userSessionList;
 		} else {
 			var destination = jsonData.header.destination;
+			console.log("\n", self.ModuleName, "[Application -> Node]", jsonData.header.source, "->", destination, jsonData.data.header.command, "\n");
 			if (jsonData.stamping == undefined) {
 				jsonData.stamping = [];
 			}
