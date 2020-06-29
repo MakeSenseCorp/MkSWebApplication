@@ -527,6 +527,7 @@ MkSGateway.prototype.Start = function () {
 						if (session.Socket == connection) {
 							// Send messages to nodes about this disconnection
 							for (var key in self.NodeList) {
+								console.log (self.ModuleName, (new Date()), "Send [unregister_on_node_change] to ", item.UUID);
 								var item = self.NodeList[key];
 								var packet = {
 									header: {
@@ -672,7 +673,8 @@ MkSGateway.prototype.Start = function () {
 								connection.LastMessageData = message.utf8Data;
 								jsonData = JSON.parse(message.utf8Data);
 								
-								console.log("\n", self.ModuleName, "Node -> Application", jsonData, "\n");
+								// console.log("\n", self.ModuleName, "Node -> Application", jsonData, "\n");
+								console.log("\n", self.ModuleName, "[Node -> Application]", jsonData.header.source, " -> ", jsonData.header.destination, "\n");
 								if ("HANDSHAKE" == jsonData.header.message_type) {
 								} else {
 									var destination = jsonData.header.destination;
@@ -754,6 +756,7 @@ MkSGateway.prototype.Start = function () {
 
 															if (sessionFound == false) {
 																// Send session disconnected packet
+																console.log (self.ModuleName, (new Date()), "Send [unregister_on_node_change] to ", jsonData.header.source);
 																var packet = {
 																	header: {
 																		message_type: "DIRECT",
@@ -1034,7 +1037,8 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 
 	if (info.message.type === 'utf8') {
 		jsonData = JSON.parse(info.message.utf8Data);
-		console.log(self.ModuleName, "Application -> Node", jsonData);
+		// console.log(self.ModuleName, "Application -> Node", jsonData);
+		console.log("\n", self.ModuleName, "[Application -> Node]", jsonData.header.source, " -> ", jsonData.header.destination, "\n");
 		
 		if ("HANDSHAKE" == jsonData.header.message_type) {
 			console.log(self.ModuleName, (new Date()), "Register new application session:", jsonData.user.key);
