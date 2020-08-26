@@ -835,7 +835,15 @@ MkSGateway.prototype.Start = function () {
 												var payload = jsonData.data.payload;
 												console.log(jsonData.data.payload); 
 												switch(jsonData.data.header.command) {
-													case "node_connected":
+													case "node_install": {
+														console.log(self.ModuleName, (new Date()), "Install node ", payload.node.uuid);
+													}
+													break;
+													case "node_uninstall": {
+														console.log(self.ModuleName, (new Date()), "Uninstall node ", payload.node.uuid);
+													}
+													break;
+													case "node_connected": {
 														console.log(self.ModuleName, (new Date()), "Register node:", payload.node.uuid);
 														if (master) {
 															var nodeConn = new Connection(payload.node.uuid, master.Socket);
@@ -894,8 +902,9 @@ MkSGateway.prototype.Start = function () {
 																self.CloudConnection.sendUTF(JSON.stringify(packet));
 															}
 														});
+													}
 													break;
-													case "node_disconnected":
+													case "node_disconnected": {
 														console.log (self.ModuleName, (new Date()), "Unregister node:", payload.node.uuid);
 														if (self.NodeList[request.httpRequest.headers.uuid] !== undefined) {
 															// Send event to all application instances about this node.
@@ -952,6 +961,9 @@ MkSGateway.prototype.Start = function () {
 																self.CloudConnection.sendUTF(JSON.stringify(packet));
 															}
 														});
+													}
+													break;
+													default:
 													break;
 												}
 											}

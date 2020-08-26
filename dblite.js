@@ -41,7 +41,7 @@ function MkSDatabase (databaseInfo) {
 MkSDatabase.prototype.InitUuidDatabase = function () {
     var self = this;
 
-    this.UuidDB = this.DB.uuids;
+    this.UuidDB = this.DB.uuids.list;
     console.log(self.ModuleName, "UUID Database\n", this.UuidDB);
 }
 
@@ -124,6 +124,10 @@ MkSDatabase.prototype.GetNodesByUserId = function (user_id, callback) {
     }
 }
 
+MkSDatabase.prototype.AddNewNode = function() {
+
+}
+
 MkSDatabase.prototype.GetAllUUIDs = function (callback) {
 	var self 	= this;
 }
@@ -133,7 +137,7 @@ MkSDatabase.prototype.GetAllUUIDs = function (callback) {
 MkSDatabase.prototype.InitUserDatabase = function () {
     var self = this;
     
-    this.UserDB = this.DB.users;
+    this.UserDB = this.DB.users.list;
     console.log(self.ModuleName, "User Database\n", this.UserDB);
 }
 
