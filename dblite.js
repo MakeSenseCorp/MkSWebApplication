@@ -16,7 +16,7 @@ function MkSDatabase (databaseInfo) {
 	this.UuidDB 			= null;
     
     var dbFile = fs.readFileSync('./dblite.json', 'utf8');
-    this.DB = JSON.parse(dbFile)["db"];
+    this.DB = JSON.parse(dbFile);
 	
 	this.InitUuidDatabase();
 	this.InitUserDatabase();
@@ -41,7 +41,7 @@ function MkSDatabase (databaseInfo) {
 MkSDatabase.prototype.InitUuidDatabase = function () {
     var self = this;
 
-    this.UuidDB = this.DB.uuids.list;
+    this.UuidDB = this.DB.db.uuids.list;
     console.log(self.ModuleName, "UUID Database\n", this.UuidDB);
 }
 
@@ -124,8 +124,17 @@ MkSDatabase.prototype.GetNodesByUserId = function (user_id, callback) {
     }
 }
 
-MkSDatabase.prototype.AddNewNode = function() {
-
+MkSDatabase.prototype.AddNewNode = function(node) {
+	for (var index = 0; index < this.UuidDB.length; index++) {
+		item = this.UuidDB[index];
+		if (item.uuid == node.uuid) {
+			return;
+		}
+	}
+	
+	this.UuidDB.push(node);
+	this.DB.db.uuids.list = this.UuidDB;
+	fs.writeFileSync('./dblite.json', JSON.stringify(this.DB));
 }
 
 MkSDatabase.prototype.GetAllUUIDs = function (callback) {
@@ -137,7 +146,7 @@ MkSDatabase.prototype.GetAllUUIDs = function (callback) {
 MkSDatabase.prototype.InitUserDatabase = function () {
     var self = this;
     
-    this.UserDB = this.DB.users.list;
+    this.UserDB = this.DB.db.users.list;
     console.log(self.ModuleName, "User Database\n", this.UserDB);
 }
 

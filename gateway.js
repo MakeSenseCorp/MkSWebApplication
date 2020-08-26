@@ -837,6 +837,7 @@ MkSGateway.prototype.Start = function () {
 												switch(jsonData.data.header.command) {
 													case "node_install": {
 														console.log(self.ModuleName, (new Date()), "Install node ", payload.node.uuid);
+														self.Database.AddNewNode(payload.node);
 													}
 													break;
 													case "node_uninstall": {
