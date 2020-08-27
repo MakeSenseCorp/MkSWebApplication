@@ -137,6 +137,18 @@ MkSDatabase.prototype.AddNewNode = function(node) {
 	fs.writeFileSync('./dblite.json', JSON.stringify(this.DB));
 }
 
+MkSDatabase.prototype.RemoveNode = function(node) {
+	for (var index = 0; index < this.UuidDB.length; index++) {
+		item = this.UuidDB[index];
+		if (item.uuid == node.uuid) {
+            this.UuidDB.splice(index, 1);
+            this.DB.db.uuids.list = this.UuidDB;
+	        fs.writeFileSync('./dblite.json', JSON.stringify(this.DB));
+			return;
+		}
+	}
+}
+
 MkSDatabase.prototype.GetAllUUIDs = function (callback) {
 	var self 	= this;
 }
