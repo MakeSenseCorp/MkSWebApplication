@@ -12,7 +12,9 @@ function Connection (uuid, sock) {
 	this.UUID 			= uuid;
 	this.Node 			= {
 		type: 0,
-		name: ""
+		name: "",
+		tx_packet: 0,
+		rx_packet: 0
 	};
 
 	return this;
@@ -156,7 +158,7 @@ MkSGateway.prototype.SessionsMonitorHandler = function () {
 	console.log(this.ModuleName, "Node Connected Sessions:");
 	for (key in this.NodeList) {
 		var node = this.NodeList[key];
-		console.log(this.ModuleName, "\t", key, node.Node.type, node.Node.name);
+		console.log(this.ModuleName, "\t", key, node.Node.type, node.Node.name, node.Node.tx_packet, node.Node.rx_packet);
 	}
 
 	console.log(this.ModuleName, "Application Connected Sessions:");
@@ -680,10 +682,12 @@ MkSGateway.prototype.Start = function () {
 								} else {
 									var destination = jsonData.header.destination;
 									var source 		= jsonData.header.source;
-									console.log("\n", self.ModuleName, "[Node -> Application]", source, "->", destination, jsonData.data.header.command, "\n");
+									// console.log("\n", self.ModuleName, "[Node -> Application]", source, "->", destination, jsonData.data.header.command, "\n");
 									switch(jsonData.header.message_type) {
 										case "DIRECT":
 											if ("GATEWAY" == destination) {
+												var tx_node = self.NodeList[source];
+												tx_node.Node.tx_packet++;
 												switch (jsonData.data.header.command) {
 													case 'ping':
 														console.log("\n", self.ModuleName, "PING from", jsonData.header.source, "\n");
@@ -725,6 +729,8 @@ MkSGateway.prototype.Start = function () {
 													break;
 												}
 											} else {
+												var tx_node = self.NodeList[source];
+												tx_node.Node.tx_packet++;
 												var node = self.NodeList[destination];
 												if (undefined != node) {
 													node.Socket.send(JSON.stringify(jsonData));
@@ -800,11 +806,14 @@ MkSGateway.prototype.Start = function () {
 										case "PRIVATE":
 										break;
 										case "BROADCAST":
-												console.log("\n", self.ModuleName, "BROADCAST message recieved\n");
+											console.log("\n", self.ModuleName, "BROADCAST message recieved\n");
+											var tx_node = self.NodeList[source];
+											tx_node.Node.tx_packet++;
 											// Send to all nodes.
 											for (key in self.NodeList) {
 												jsonData.header.destination = key;
 												self.NodeList[key].Socket.send(JSON.stringify(jsonData));
+												self.NodeList[key].Node.tx_packet++;
 											}
 											
 											// Send to all application sessions.
@@ -834,6 +843,7 @@ MkSGateway.prototype.Start = function () {
 												var master 	= self.NodeList[source];
 												var payload = jsonData.data.payload;
 												console.log(jsonData.data.payload); 
+												master.Node.tx_packet++;
 												switch(jsonData.data.header.command) {
 													case "node_install": {
 														console.log(self.ModuleName, (new Date()), "Install node ", payload.node.uuid);
@@ -1078,7 +1088,7 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 			self.ApplicationList[jsonData.user.key] = userSessionList;
 		} else {
 			var destination = jsonData.header.destination;
-			console.log("\n", self.ModuleName, "[Application -> Node]", jsonData.header.source, "->", destination, jsonData.data.header.command, "\n");
+			// console.log("\n", self.ModuleName, "[Application -> Node]", jsonData.header.source, "->", destination, jsonData.data.header.command, "\n");
 			if (jsonData.stamping == undefined) {
 				jsonData.stamping = [];
 			}
@@ -1090,6 +1100,7 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 						jsonData.piggybag.webface_indexer = info.webface_indexer;
 						jsonData.additional.pipe = "GATEWAY";
 						node.Socket.send(JSON.stringify(jsonData));
+						node.Node.rx_packet++;
 					}
 				break;
 				case "PRIVATE":
@@ -1098,6 +1109,7 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 					// Send to all nodes.
 					for (key in self.NodesList) {
 						self.NodesList[key].Socket.send(JSON.stringify(jsonData));
+						self.NodesList[key].Node.rx_packet++;
 					}
 				break;
 				case "GROUP":
