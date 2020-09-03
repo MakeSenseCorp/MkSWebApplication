@@ -852,7 +852,6 @@ MkSGateway.prototype.Start = function () {
 													break;
 													case "node_uninstall": {
 														console.log(self.ModuleName, (new Date()), "Uninstall node ", payload.node.uuid);
-														self.Database.RemoveNode(payload.node);
 													}
 													break;
 													case "node_connected": {
