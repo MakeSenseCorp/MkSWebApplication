@@ -687,7 +687,9 @@ MkSGateway.prototype.Start = function () {
 										case "DIRECT":
 											if ("GATEWAY" == destination) {
 												var tx_node = self.NodeList[source];
-												tx_node.Node.tx_packet++;
+												if (tx_node !== undefined) {
+													tx_node.Node.tx_packet++;
+												}
 												switch (jsonData.data.header.command) {
 													case 'ping':
 														console.log("\n", self.ModuleName, "PING from", jsonData.header.source, "\n");
@@ -730,7 +732,9 @@ MkSGateway.prototype.Start = function () {
 												}
 											} else {
 												var tx_node = self.NodeList[source];
-												tx_node.Node.tx_packet++;
+												if (tx_node !== undefined) {
+													tx_node.Node.tx_packet++;
+												}
 												var node = self.NodeList[destination];
 												if (undefined != node) {
 													node.Socket.send(JSON.stringify(jsonData));
@@ -808,7 +812,9 @@ MkSGateway.prototype.Start = function () {
 										case "BROADCAST":
 											console.log("\n", self.ModuleName, "BROADCAST message recieved\n");
 											var tx_node = self.NodeList[source];
-											tx_node.Node.tx_packet++;
+											if (tx_node !== undefined) {
+												tx_node.Node.tx_packet++;
+											}
 											// Send to all nodes.
 											for (key in self.NodeList) {
 												jsonData.header.destination = key;
