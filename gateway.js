@@ -682,7 +682,7 @@ MkSGateway.prototype.Start = function () {
 								} else {
 									var destination = jsonData.header.destination;
 									var source 		= jsonData.header.source;
-									// console.log("\n", self.ModuleName, "[Node -> Application]", source, "->", destination, jsonData.data.header.command, "\n");
+									console.log(self.ModuleName, "[Node -> Application]", source, "->", destination, jsonData.data.header.command);
 									switch(jsonData.header.message_type) {
 										case "DIRECT":
 											if ("GATEWAY" == destination) {
@@ -1095,7 +1095,7 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 			self.ApplicationList[jsonData.user.key] = userSessionList;
 		} else {
 			var destination = jsonData.header.destination;
-			// console.log("\n", self.ModuleName, "[Application -> Node]", jsonData.header.source, "->", destination, jsonData.data.header.command, "\n");
+			console.log(self.ModuleName, "[Application -> Node]", jsonData.header.source, "->", destination, jsonData.data.header.command);
 			if (jsonData.stamping == undefined) {
 				jsonData.stamping = [];
 			}
