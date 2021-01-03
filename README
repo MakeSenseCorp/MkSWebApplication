@@ -1,0 +1,10 @@
+See blank page when navigating to <IP>:8080.
+	a.	Check if port is taken -> netstat -an
+		Also you can see what process use it
+			netstat -ap (windows need priviledges)
+	b. 	Check if public folder is correct.
+	c. 	Use Chrome debugong tool to investigate.
+	d. 	In windows to link mksdk-js with public folder use next command (might need priviledges)
+			mklink /D mksdk <PATH>
+		In Linux,
+			ln mksdk-js <PATH>
