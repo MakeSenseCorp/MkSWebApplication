@@ -521,7 +521,7 @@ MkSGateway.prototype.Start = function () {
 		connection.on('close', function(conn) {
 			// Remove application session
 			if (request.httpRequest.headers.UserKey !== undefined) {
-				console.log (self.ModuleName, (new Date()), "Unregister application session:", wsHandle, request.httpRequest.headers.UserKey, request.httpRequest.headers['sec-websocket-key']);
+				console.log (self.ModuleName, (new Date()), "Unregister application session:", wsHandle, request.httpRequest.headers.UserKey); // , request.httpRequest.headers['sec-websocket-key']);
 				var sessions = self.ApplicationList[request.httpRequest.headers.UserKey];
 				if (undefined !== sessions) {
 					for (idx = 0; idx < sessions.length; idx++) {
@@ -682,7 +682,7 @@ MkSGateway.prototype.Start = function () {
 								} else {
 									var destination = jsonData.header.destination;
 									var source 		= jsonData.header.source;
-									console.log(self.ModuleName, "[Node -> Application]", source, "->", destination, jsonData.data.header.command);
+									// console.log(self.ModuleName, "[Node -> Application]", source, "->", destination, jsonData.data.header.command);
 									switch(jsonData.header.message_type) {
 										case "DIRECT":
 											if ("GATEWAY" == destination) {
@@ -746,7 +746,7 @@ MkSGateway.prototype.Start = function () {
 															var sessionFound = false;
 															for (idx = 0; idx < sessions.length; idx++) {
 																session = sessions[idx];
-																// console.log (self.ModuleName, (new Date()), "SEARCH SESSION", session.WebfaceIndexer, jsonData.piggybag.webface_indexer);
+																//console.log (self.ModuleName, (new Date()), "SEARCH SESSION", session.WebfaceIndexer, jsonData.piggybag.webface_indexer);
 																if (session.WebfaceIndexer == jsonData.piggybag.webface_indexer) {
 																	if (session.Additional.sender == 1) {
 																		// Handling Cloud connection
@@ -761,6 +761,7 @@ MkSGateway.prototype.Start = function () {
 																	} else {
 
 																	}
+																	// console.log (self.ModuleName, (new Date()), "SEND TO INDEXER", session.WebfaceIndexer, jsonData.piggybag.webface_indexer);
 																	session.Socket.send(JSON.stringify(jsonData));
 																	sessionFound = true;
 																	continue;
@@ -1095,7 +1096,7 @@ MkSGateway.prototype.WebfaceIncome = function (info) {
 			self.ApplicationList[jsonData.user.key] = userSessionList;
 		} else {
 			var destination = jsonData.header.destination;
-			console.log(self.ModuleName, "[Application -> Node]", jsonData.header.source, "->", destination, jsonData.data.header.command);
+			// console.log(self.ModuleName, "[Application -> Node]", jsonData.header.source, "->", destination, jsonData.data.header.command);
 			if (jsonData.stamping == undefined) {
 				jsonData.stamping = [];
 			}
